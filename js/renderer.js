@@ -13,19 +13,19 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
     html = `
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:#38bdf8; font-weight:700;">[ Front Skate: 50% ]</span>
-        <div style="font-weight:700; color:#fff; font-size:13px; margin:2px 0;">${skateTon} t (${skateStatic_kN} kN)</div>
+        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Front Skate: 50% ]</span>
+        <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin:2px 0;">${skateTon} t (${skateStatic_kN} kN)</div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">STATIC LOAD<strong>${rollerStatic_kN} kN / roller</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong style="color:#ef4444;">${rollerDyn_kN} kN / roller</strong></div>
+          <div class="tree-leaf">DYNAMIC PEAK<strong style="color:var(--fail);">${rollerDyn_kN} kN / roller</strong></div>
         </div>
       </div>
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:#38bdf8; font-weight:700;">[ Rear Skate: 50% ]</span>
-        <div style="font-weight:700; color:#fff; font-size:13px; margin:2px 0;">${skateTon} t (${skateStatic_kN} kN)</div>
+        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Rear Skate: 50% ]</span>
+        <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin:2px 0;">${skateTon} t (${skateStatic_kN} kN)</div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">STATIC LOAD<strong>${rollerStatic_kN} kN / roller</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong style="color:#ef4444;">${rollerDyn_kN} kN / roller</strong></div>
+          <div class="tree-leaf">DYNAMIC PEAK<strong style="color:var(--fail);">${rollerDyn_kN} kN / roller</strong></div>
         </div>
       </div>
     `;
@@ -39,16 +39,16 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
     html = `
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:#38bdf8; font-weight:700;">[ 2x Powered Drive Skates: 33.3% ]</span>
-        <div style="font-weight:700; color:#fff; font-size:13px; margin:2px 0;">16.7% each (${pStatic_kN} kN/skate)</div>
+        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ 2x Powered Drive Skates: 33.3% ]</span>
+        <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin:2px 0;">16.7% each (${pStatic_kN} kN/skate)</div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">STATIC ROLLER<strong>${pRoller_kN} kN / roller</strong></div>
           <div class="tree-leaf">TURNING DRIVE<strong>Traction Safe</strong></div>
         </div>
       </div>
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:#4ade80; font-weight:700;">[ 4x Corner Follower Skates: 66.7% ]</span>
-        <div style="font-weight:700; color:#fff; font-size:13px; margin:2px 0;">Nominal: ${cStatic_kN} kN | Rocking Peak: ${cDyn_kN} kN</div>
+        <span style="font-size:10px; color:var(--pass); font-weight:700;">[ 4x Corner Follower Skates: 66.7% ]</span>
+        <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin:2px 0;">Nominal: ${cStatic_kN} kN | Rocking Peak: ${cDyn_kN} kN</div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">STATIC WHEEL<strong>${cWheelStatic_kN} kN / wheel</strong></div>
           <div class="tree-leaf">ROCKING PEAK<strong>${cWheelDyn_kN} kN / wheel</strong></div>
@@ -65,16 +65,16 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
     html = `
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:#38bdf8; font-weight:700;">[ 2x Center Powered Units: 50% ]</span>
-        <div style="font-weight:700; color:#fff; font-size:13px; margin:2px 0;">25% each (${pStatic_kN} kN/skate)</div>
+        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ 2x Center Powered Units: 50% ]</span>
+        <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin:2px 0;">25% each (${pStatic_kN} kN/skate)</div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">STATIC ROLLER<strong>${pRoller_kN} kN / roller</strong></div>
           <div class="tree-leaf">360° SPIN ZERO-TURN<strong>Differential Drive</strong></div>
         </div>
       </div>
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:#4ade80; font-weight:700;">[ 2x Swivel Bogies (Front/Rear): 50% ]</span>
-        <div style="font-weight:700; color:#fff; font-size:13px; margin:2px 0;">Nominal: ${fStatic_kN} kN | Pitch Peak: ${fDyn_kN} kN</div>
+        <span style="font-size:10px; color:var(--pass); font-weight:700;">[ 2x Swivel Bogies (Front/Rear): 50% ]</span>
+        <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin:2px 0;">Nominal: ${fStatic_kN} kN | Pitch Peak: ${fDyn_kN} kN</div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">STATIC WHEEL<strong>${fWheelStatic_kN} kN / wheel</strong></div>
           <div class="tree-leaf">PITCHING PEAK<strong>${fWheelDyn_kN} kN / wheel</strong></div>
@@ -85,7 +85,7 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
   container.innerHTML = html;
 }
 
-export function drawFrontElevation(canvas, params) {
+export function drawFrontElevation(canvas, params, isDark = true) {
   const ctx = canvas.getContext('2d');
   const { D, numWheels, F_skate, F_wheel, hSlab, plateOn, B, t, isRigid, isCurling, t_req, Beff, bottomSpread, plateMat } = params;
 
@@ -97,14 +97,22 @@ export function drawFrontElevation(canvas, params) {
   const slabH_px = hSlab * scale;
   const slabBotY = slabTopY + slabH_px;
 
+  // Theme-aware colors
+  const slabFill = isDark ? "#1e293b" : "#e2e8f0";
+  const slabStroke = isDark ? "#475569" : "#94a3b8";
+  const primaryText = isDark ? "#f8fafc" : "#0f172a";
+  const secondaryText = isDark ? "#94a3b8" : "#475569";
+  const chassisFill = isDark ? "#334155" : "#cbd5e1";
+  const riserFill = isDark ? "#475569" : "#94a3b8";
+
   // 1. Concrete Slab
-  ctx.fillStyle = "#1e293b";
+  ctx.fillStyle = slabFill;
   ctx.fillRect(40, slabTopY, canvas.width - 80, slabH_px);
-  ctx.strokeStyle = "#475569";
+  ctx.strokeStyle = slabStroke;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(40, slabTopY, canvas.width - 80, slabH_px);
 
-  ctx.fillStyle = "#94a3b8";
+  ctx.fillStyle = secondaryText;
   ctx.font = "bold 11px sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(`Concrete Slab (Depth h = ${hSlab.toFixed(0)} mm)`, 55, slabTopY + slabH_px / 2 + 4);
@@ -121,20 +129,20 @@ export function drawFrontElevation(canvas, params) {
   ctx.lineTo(cx - botHalf, slabBotY);
   ctx.closePath();
 
-  ctx.fillStyle = (!isCurling && bottomSpread > 2 * hSlab) ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.14)";
+  ctx.fillStyle = (!isCurling && bottomSpread > 2 * hSlab) ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)";
   ctx.fill();
-  ctx.strokeStyle = (!isCurling && bottomSpread > 2 * hSlab) ? "#22c55e" : "#ef4444";
+  ctx.strokeStyle = (!isCurling && bottomSpread > 2 * hSlab) ? "#16a34a" : "#dc2626";
   ctx.setLineDash([5, 5]);
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.restore();
 
-  ctx.fillStyle = "#f8fafc";
+  ctx.fillStyle = primaryText;
   ctx.font = "bold 11px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(`Slab Spread Base = ${bottomSpread.toFixed(0)} mm`, cx, slabBotY + 28);
 
-  ctx.strokeStyle = "#94a3b8";
+  ctx.strokeStyle = secondaryText;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(cx - botHalf, slabBotY + 12);
@@ -150,13 +158,13 @@ export function drawFrontElevation(canvas, params) {
     skateBaseY = pTopY;
 
     if (isRigid) {
-      ctx.fillStyle = "#7e22ce";
+      ctx.fillStyle = isDark ? "#7e22ce" : "#a855f7";
       ctx.fillRect(cx - pW / 2, pTopY, pW, pH);
-      ctx.strokeStyle = "#c084fc";
+      ctx.strokeStyle = isDark ? "#c084fc" : "#7e22ce";
       ctx.lineWidth = 2;
       ctx.strokeRect(cx - pW / 2, pTopY, pW, pH);
 
-      ctx.fillStyle = "#f3e8ff";
+      ctx.fillStyle = "#ffffff";
       ctx.font = "bold 10.5px sans-serif";
       ctx.fillText(`${B}mm Wide ${plateMat.name} Runway (t = ${t}mm)`, cx, pTopY + pH / 2 + 3.5);
     } else {
@@ -175,7 +183,7 @@ export function drawFrontElevation(canvas, params) {
       ctx.stroke();
       ctx.restore();
 
-      ctx.fillStyle = "#ef4444";
+      ctx.fillStyle = "#dc2626";
       ctx.font = "bold 10px sans-serif";
       ctx.fillText("▲ LIFT-OFF (POTATO-CHIP)", cx - pW / 2 + 10, slabTopY - lift - 5);
       ctx.fillText("▲ LIFT-OFF", cx + pW / 2 - 10, slabTopY - lift - 5);
@@ -194,16 +202,16 @@ export function drawFrontElevation(canvas, params) {
   const chassisY = wy - r - chassisH;
   const chassisW = (numAxles - 1) * axleSpacing * scale + (D * scale) + 24;
 
-  ctx.fillStyle = "#334155";
+  ctx.fillStyle = chassisFill;
   ctx.fillRect(cx - chassisW / 2, chassisY, chassisW, chassisH);
-  ctx.strokeStyle = "#94a3b8";
+  ctx.strokeStyle = slabStroke;
   ctx.strokeRect(cx - chassisW / 2, chassisY, chassisW, chassisH);
 
   const riserH = 20;
   const riserY = chassisY - riserH;
-  ctx.fillStyle = "#475569";
+  ctx.fillStyle = riserFill;
   ctx.fillRect(cx - 36, riserY, 72, riserH);
-  ctx.strokeStyle = "#cbd5e1";
+  ctx.strokeStyle = slabStroke;
   ctx.strokeRect(cx - 36, riserY, 72, riserH);
 
   ctx.fillStyle = "#ffffff";
@@ -214,7 +222,7 @@ export function drawFrontElevation(canvas, params) {
     const ax = startX + i * axleSpacing * scale;
     ctx.beginPath();
     ctx.arc(ax, wy, r, 0, Math.PI * 2);
-    ctx.fillStyle = "#38bdf8";
+    ctx.fillStyle = isDark ? "#38bdf8" : "#0284c7";
     ctx.fill();
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
@@ -230,8 +238,9 @@ export function drawFrontElevation(canvas, params) {
   }
 
   const arrowTopY = 28;
-  ctx.strokeStyle = "#38bdf8";
-  ctx.fillStyle = "#38bdf8";
+  const arrowColor = isDark ? "#38bdf8" : "#0284c7";
+  ctx.strokeStyle = arrowColor;
+  ctx.fillStyle = arrowColor;
   ctx.lineWidth = 3.5;
   ctx.beginPath();
   ctx.moveTo(cx, arrowTopY);
@@ -242,7 +251,7 @@ export function drawFrontElevation(canvas, params) {
   ctx.fillText(`Peak F_skate = ${F_skate.toFixed(2)} kN (${numWheels}w @ ${F_wheel.toFixed(2)} kN/w)`, cx, arrowTopY - 8);
 }
 
-export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, L) {
+export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, L, isDark = true) {
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
@@ -253,14 +262,21 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
   const skidX = cx - skidW_px / 2;
   const skidY = cy - skidH_px / 2;
 
+  // Theme-aware colors
+  const skidFill = isDark ? "#1e293b" : "#e2e8f0";
+  const skidStroke = isDark ? "#475569" : "#94a3b8";
+  const accentColor = isDark ? "#38bdf8" : "#0284c7";
+  const labelColor = isDark ? "#cbd5e1" : "#334155";
+  const legendColor = isDark ? "#94a3b8" : "#64748b";
+
   // 1. Skid Frame
-  ctx.fillStyle = "#1e293b";
+  ctx.fillStyle = skidFill;
   ctx.fillRect(skidX, skidY, skidW_px, skidH_px);
-  ctx.strokeStyle = "#475569";
+  ctx.strokeStyle = skidStroke;
   ctx.lineWidth = 2.5;
   ctx.strokeRect(skidX, skidY, skidW_px, skidH_px);
 
-  ctx.fillStyle = "#38bdf8";
+  ctx.fillStyle = accentColor;
   ctx.font = "bold 11px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("◄─────────────────────── 3.80 m Shipping Skid Length ───────────────────────►", cx, skidY - 10);
@@ -268,7 +284,7 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
   ctx.save();
   ctx.translate(skidX - 14, cy);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = "#cbd5e1";
+  ctx.fillStyle = labelColor;
   ctx.font = "bold 11px sans-serif";
   ctx.fillText("2.20 m Width", 0, 0);
   ctx.restore();
@@ -292,8 +308,8 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
 
   // Draw Continuous Runway Tracks if Plate is Enabled
   if (plateOn) {
-    ctx.fillStyle = "rgba(126, 34, 206, 0.4)";
-    ctx.strokeStyle = "#c084fc";
+    ctx.fillStyle = isDark ? "rgba(126, 34, 206, 0.4)" : "rgba(168, 85, 247, 0.25)";
+    ctx.strokeStyle = isDark ? "#c084fc" : "#9333ea";
     ctx.lineWidth = 1.5;
 
     const trackH_px = Math.max(20, Math.min(50, (B / 2200) * skidH_px * 2.2));
@@ -319,9 +335,9 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
   const skateH = 22;
 
   skates.forEach(sk => {
-    ctx.fillStyle = sk.isPowered ? "#0284c7" : "#15803d";
+    ctx.fillStyle = sk.isPowered ? (isDark ? "#0284c7" : "#0284c7") : (isDark ? "#15803d" : "#16a34a");
     ctx.fillRect(sk.x - skateW / 2, sk.y - skateH / 2, skateW, skateH);
-    ctx.strokeStyle = sk.isPowered ? "#38bdf8" : "#4ade80";
+    ctx.strokeStyle = sk.isPowered ? (isDark ? "#38bdf8" : "#38bdf8") : (isDark ? "#4ade80" : "#22c55e");
     ctx.lineWidth = 1.5;
     ctx.strokeRect(sk.x - skateW / 2, sk.y - skateH / 2, skateW, skateH);
 
@@ -331,16 +347,18 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
     ctx.fillText(sk.id, sk.x, sk.y + 3);
 
     let loadStr = `${nomLoad.toFixed(1)} kN`;
+    if (activeSetup === 1) loadStr = `${nomLoad.toFixed(1)} kN`;
     if (activeSetup === 2 && sk.id === "C1") loadStr = `Peak: ${peakLoad.toFixed(1)} kN`;
     if (activeSetup === 3 && sk.id === "F1") loadStr = `Peak: ${peakLoad.toFixed(1)} kN`;
 
     ctx.font = "bold 9px sans-serif";
-    ctx.fillStyle = "#cbd5e1";
+    ctx.fillStyle = labelColor;
     const labelY = (sk.y < cy) ? sk.y - 14 : sk.y + 22;
     ctx.fillText(loadStr, sk.x, labelY);
   });
 
-  ctx.fillStyle = "#94a3b8";
+  // Footer Legend
+  ctx.fillStyle = legendColor;
   ctx.font = "11px sans-serif";
   ctx.textAlign = "left";
   ctx.fillText("■ Blue: TS-10T Powered Skates (Center of 2.20 m ends)", skidX, skidY + skidH_px + 22);
