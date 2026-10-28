@@ -59,21 +59,21 @@
       </div>
       <div class="form-group">
         <div class="label-wrap"><span>Mounting Risers & Auxiliary Rigging</span><span class="val" id="lblRiserMass">180 kg</span></div>
-        <input type="range" id="inputRiserMass" min="50" max="500" step="25" value="180">
+        <input type="range" id="inputRiserMass" min="0" max="500" step="10" value="180">
       </div>
 
-      <div class="sub-box" style="border-left: 3px solid var(--accent); background:#0f172a; margin-top:12px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+      <div class="sub-box sub-box-highlight">
+        <div class="sub-box-row">
           <span>Equipment Package Gross Mass:</span>
-          <strong id="lblTotalGrossMass" style="color:#ffffff; font-size:13px;">8,120 kg</strong>
+          <strong id="lblTotalGrossMass">8,120 kg</strong>
         </div>
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <div class="sub-box-row">
           <span>Total Gravity Weight:</span>
-          <strong id="lblTotalGrossWeight" style="color:var(--accent); font-size:13px;">79.66 kN</strong>
+          <strong id="lblTotalGrossWeight" class="val-accent">79.66 kN</strong>
         </div>
-        <div style="display:flex; justify-content:space-between;">
+        <div class="sub-box-row">
           <span>Platform Footprint:</span>
-          <strong style="color:#cbd5e1;">3.80 m × 2.20 m (8.36 m²)</strong>
+          <strong class="val-muted">3.80 m × 2.20 m (8.36 m²)</strong>
         </div>
       </div>
     </div>
@@ -160,12 +160,21 @@
           <input type="range" id="inputPlateThick" min="2" max="60" step="1" value="16">
         </div>
 
-        <div class="sub-box" style="border-left: 3px solid var(--accent); background:#0b1329;">
-          <div>• <strong>Code Minimum Width (B_min = 2h):</strong> <span id="lblRecWidth" style="color:var(--accent); font-weight:700;">300 mm</span></div>
-          <div>• <strong>Required Thickness for Rigidity (t_req):</strong> <span id="lblRecThick" style="color:#fde047; font-weight:700;">11.2 mm</span></div>
-          <div style="margin-top:5px; padding-top:5px; border-top:1px dashed #334155;">
-            • <strong>Single Runway Sheet Mass:</strong> <strong id="lblPlateHandlingWeight" style="color:#86efac; font-size:12px;">18.7 kg</strong>
-            <div id="lblHandlingBadge" style="font-size:10.5px; margin-top:2px; color:#cbd5e1;">Easy 1-Man Handling</div>
+        <div class="sub-box sub-box-highlight">
+          <div class="sub-box-row">
+            <span>Code Minimum Width (B_min = 2h):</span>
+            <strong id="lblRecWidth" class="val-accent">300 mm</strong>
+          </div>
+          <div class="sub-box-row">
+            <span>Required Rigidity Thickness (t_req):</span>
+            <strong id="lblRecThick" class="val-warn">11.2 mm</strong>
+          </div>
+          <div class="sub-box-divider">
+            <div class="sub-box-row">
+              <span>Single Runway Sheet Mass:</span>
+              <strong id="lblPlateHandlingWeight">18.7 kg</strong>
+            </div>
+            <div id="lblHandlingBadge" style="font-size:10.5px; margin-top:2px;">Easy 1-Man Handling</div>
           </div>
         </div>
       </div>
