@@ -4,9 +4,13 @@ import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js';
 
 // Application State
 let activeSetup = 2;
+let currentTheme = 'dark'; // 'dark' | 'light'
 
 // DOM Cache
 const dom = {
+  // Theme Toggle Button
+  btnThemeToggle: document.getElementById('btnThemeToggle'),
+
   // Inputs
   inputPnmMass: document.getElementById('inputPnmMass'),
   inputSkidMass: document.getElementById('inputSkidMass'),
@@ -83,8 +87,41 @@ const dom = {
   topCanvas: document.getElementById('topCanvas')
 };
 
+// Theme Management
+function initTheme() {
+  const saved = localStorage.getItem('transit_sim_theme');
+  if (saved) {
+    currentTheme = saved;
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    currentTheme = 'light';
+  } else {
+    currentTheme = 'dark';
+  }
+  applyTheme(currentTheme);
+}
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('transit_sim_theme', currentTheme);
+  applyTheme(currentTheme);
+  update(); // re-draw canvases with new theme colors
+}
+
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    dom.btnThemeToggle.innerHTML = '🌙 Dark Mode';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    dom.btnThemeToggle.innerHTML = '☀️ Light Mode';
+  }
+}
+
 // Event Bindings
 function bindEvents() {
+  // Theme toggle
+  dom.btnThemeToggle.addEventListener('click', toggleTheme);
+
   // Range sliders & selects
   const liveInputs = [
     dom.inputPnmMass, dom.inputSkidMass, dom.inputPoweredTare, dom.inputRiserMass,
@@ -96,7 +133,7 @@ function bindEvents() {
 
   // Follower model presets
   document.querySelectorAll('#btnGroupModels .btn-preset').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       document.querySelectorAll('#btnGroupModels .btn-preset').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const model = btn.getAttribute('data-model');
@@ -111,7 +148,7 @@ function bindEvents() {
 
   // Plate size presets
   document.querySelectorAll('#btnGroupPlates .btn-preset').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       document.querySelectorAll('#btnGroupPlates .btn-preset').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       dom.inputPlateWidth.value = btn.getAttribute('data-w');
@@ -154,7 +191,7 @@ function setMode(mode) {
 
   if (mode === 1) {
     dom.lblSetupSummary.innerText = "Mode 1: 2-Skates Only (Baseline)";
-    dom.setupDesc.innerHTML = "<strong style='color:#f87171;'>Baseline Mode:</strong> 2 powered skates at the center of the 2.20 m ends carry 100% of the load (50% each). High wheel loads (>10 kN) cause severe slab punching risk.";
+    dom.setupDesc.innerHTML = "<strong style='color:var(--fail);'>Baseline Mode:</strong> 2 powered skates at the center of the 2.20 m ends carry 100% of the load (50% each). High wheel loads (>10 kN) cause severe slab punching risk.";
     dom.panelFollower.style.opacity = "0.5";
     dom.panelFollower.style.pointerEvents = "none";
   } else if (mode === 2) {
@@ -164,7 +201,7 @@ function setMode(mode) {
     dom.panelFollower.style.pointerEvents = "auto";
   } else {
     dom.lblSetupSummary.innerText = "Mode 3: Diamond 4-Point Rig";
-    dom.setupDesc.innerHTML = "<strong style='color:#38bdf8;'>360° Zero-Turn Rig:</strong> 2 center-edge powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2). Pure center spin with zero floor scrubbing.";
+    dom.setupDesc.innerHTML = "<strong style='color:var(--accent);'>360° Zero-Turn Rig:</strong> 2 center-edge powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2). Pure center spin with zero floor scrubbing.";
     dom.panelFollower.style.opacity = "1";
     dom.panelFollower.style.pointerEvents = "auto";
   }
@@ -173,6 +210,8 @@ function setMode(mode) {
 
 // Main Orchestrator
 function update() {
+  const isDark = currentTheme === 'dark';
+
   const inputs = {
     mPnm: parseFloat(dom.inputPnmMass.value),
     mSkid: parseFloat(dom.inputSkidMass.value),
@@ -220,13 +259,13 @@ function update() {
   dom.lblPlateHandlingWeight.innerText = `${res.singlePlateMass.toFixed(1)} kg`;
   if (res.singlePlateMass <= 20) {
     dom.lblHandlingBadge.innerText = "🟢 Easy 1-Man Carry (Very High Mobility)";
-    dom.lblHandlingBadge.style.color = "#86efac";
+    dom.lblHandlingBadge.style.color = "var(--pass)";
   } else if (res.singlePlateMass <= 45) {
     dom.lblHandlingBadge.innerText = "🟡 2-Man Lift Required (Standard Rigging Track)";
-    dom.lblHandlingBadge.style.color = "#fde047";
+    dom.lblHandlingBadge.style.color = "var(--warn)";
   } else {
     dom.lblHandlingBadge.innerText = "🔴 Heavy / Forklift Required (High Labor Penalty!)";
-    dom.lblHandlingBadge.style.color = "#fca5a5";
+    dom.lblHandlingBadge.style.color = "var(--fail)";
   }
 
   // Update Recommendations
@@ -330,7 +369,7 @@ function update() {
     dom.cardRigidity.className = "dash-card card-fail";
   }
 
-  // Render Visuals
+  // Render Visuals with current theme awareness
   renderLoadTree(dom.treeBranchWrap, activeSetup, res.grossMass, res.grossWeight_kN, res.activeFollowerWheels);
 
   drawFrontElevation(dom.frontCanvas, {
@@ -348,13 +387,14 @@ function update() {
     Beff: res.Beff,
     bottomSpread: res.bottomSpread_mm,
     plateMat: res.plateMat
-  });
+  }, isDark);
 
-  drawTopPlan(dom.topCanvas, activeSetup, res.nominalSkateLoad_kN, res.peakSkateLoad_kN, inputs.plateEnabled, inputs.B_plate, inputs.L_plate);
+  drawTopPlan(dom.topCanvas, activeSetup, res.nominalSkateLoad_kN, res.peakSkateLoad_kN, inputs.plateEnabled, inputs.B_plate, inputs.L_plate, isDark);
 }
 
 // Initial Boot
 window.onload = () => {
+  initTheme();
   bindEvents();
   update();
 };
