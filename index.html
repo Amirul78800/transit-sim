@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Machinery Transit & Slab Shear Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Unified Machinery Transit & Slab Shear Simulator</h1>
+    <p>Transit Configurations: 2-Powered Skates, 6-Point Perimeter Rig, and Diamond 4-Point Rig</p>
+  </div>
+  <div class="header-actions">
+    <button onclick="window.print()" class="btn-action">🖨️ Export PDF</button>
+  </div>
+</div>
+
+<div class="app-container">
+  <!-- LEFT: CONTROLS -->
+  <div class="controls-col">
+    
+    <!-- 1. RIG CONFIGURATION SELECTOR -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>1. Active Rigging Setup</span>
+        <span style="font-size:10px; color:#38bdf8;" id="lblSetupSummary">Mode 2: 6-Point Perimeter</span>
+      </div>
+      <div class="setup-toggle">
+        <button class="setup-btn" id="btnSetup1">1. 2-Skates Only</button>
+        <button class="setup-btn active" id="btnSetup2">2. 6-Point Rig</button>
+        <button class="setup-btn" id="btnSetup3">3. Diamond 4-Pt</button>
+      </div>
+      <div class="sub-box" id="setupDesc">
+        <strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical load division with 3-point floor rocking simulation.
+      </div>
+    </div>
+
+    <!-- 2. TOTAL SYSTEM MASS (STABLE, UNAFFECTED BY SPREADER PLATES) -->
+    <div class="panel">
+      <div class="panel-title"><span>2. System Weight Breakdown</span></div>
+      <div class="form-group">
+        <div class="label-wrap"><span>PNM Equipment Payload</span><span class="val" id="lblPnmMass">6,000 kg</span></div>
+        <input type="range" id="inputPnmMass" min="3000" max="10000" step="250" value="6000">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><span>Shipping Skid Platform</span><span class="val" id="lblSkidMass">1,500 kg</span></div>
+        <input type="range" id="inputSkidMass" min="500" max="3000" step="100" value="1500">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><span>2x TS-10T Powered Skates Tare</span><span class="val" id="lblPoweredTare">440 kg</span></div>
+        <input type="range" id="inputPoweredTare" min="200" max="800" step="20" value="440">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><span>Mounting Risers & Auxiliary Rigging</span><span class="val" id="lblRiserMass">180 kg</span></div>
+        <input type="range" id="inputRiserMass" min="50" max="500" step="25" value="180">
+      </div>
+
+      <div class="sub-box" style="border-left: 3px solid var(--accent); background:#0f172a; margin-top:12px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span>Equipment Package Gross Mass:</span>
+          <strong id="lblTotalGrossMass" style="color:#ffffff; font-size:13px;">8,120 kg</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span>Total Gravity Weight:</span>
+          <strong id="lblTotalGrossWeight" style="color:var(--accent); font-size:13px;">79.66 kN</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>Platform Footprint:</span>
+          <strong style="color:#cbd5e1;">3.80 m × 2.20 m (8.36 m²)</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. FOLLOWER SKATE SPECIFICATIONS -->
+    <div class="panel" id="panelFollower">
+      <div class="panel-title"><span>3. Follower Skate Specifications</span></div>
+      <div class="form-group">
+        <label class="label-wrap"><span>Catalog Quick Selection</span></label>
+        <div class="btn-group" id="btnGroupModels" style="flex-wrap: wrap;">
+          <button class="btn-preset active" data-model="GST-8">GST-8 (6w)</button>
+          <button class="btn-preset" data-model="GST-12">GST-12 (8w)</button>
+          <button class="btn-preset" data-model="SRS-6">SRS-6 (4w 360°)</button>
+          <button class="btn-preset" data-model="SRS-10">SRS-10 (4w 360°)</button>
+          <button class="btn-preset" data-model="CUSTOM">Custom</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="label-wrap"><span>Follower Wheels per Skate (nw)</span><span class="val" id="lblFollowerWheels">6 wheels</span></div>
+        <input type="range" id="inputFollowerWheels" min="2" max="16" step="2" value="6">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><span>Wheel Diameter (D)</span><span class="val" id="lblFollowerDia">80 mm</span></div>
+        <input type="range" id="inputFollowerDia" min="60" max="140" step="5" value="80">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><span>Wheel Width (w)</span><span class="val" id="lblFollowerWidth">70 mm</span></div>
+        <input type="range" id="inputFollowerWidth" min="40" max="110" step="5" value="70">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><span>Wheel Material</span></div>
+        <select id="selectFollowerMat">
+          <option value="pu" selected>Polyurethane 95 Shore A (Elastomeric flat)</option>
+          <option value="nylon">Polyamide / Nylon PA6 (Semi-rigid contact)</option>
+          <option value="steel">Cast Steel / Iron (Rigid contact)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 4. SPREADER PLATE CONFIGURATION -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>4. Spreader Plate / Runway Condition</span>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; text-transform:none; font-size:11px;">
+          <input type="checkbox" id="checkPlateEnable" style="accent-color:var(--accent); cursor:pointer;">
+          <strong style="color:#ffffff;">Enable Plates</strong>
+        </label>
+      </div>
+
+      <div id="plateControls" style="display:none;">
+        <div class="form-group">
+          <div class="label-wrap"><span>Plate Material</span></div>
+          <select id="selectPlateSteel">
+            <option value="ss400" selected>SS400 / S275 Structural Mild Steel</option>
+            <option value="s355">S355 High-Strength Steel</option>
+            <option value="al6061">Aluminum 6061-T6 (Lightweight Metal)</option>
+            <option value="plywood">Phenolic Film-Faced Birch Plywood (Formwork Ply)</option>
+            <option value="uhmwpe">UHMWPE / HDPE Rigging Mat Plastic</option>
+            <option value="hardwood">Heavy Hardwood Timber (Kempas / Keruing / Oak)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="label-wrap"><span>Runway Track Format Presets</span></label>
+          <div class="btn-group" id="btnGroupPlates" style="flex-wrap: wrap;">
+            <button class="btn-preset" data-w="300" data-l="300">Min Pad (300×300)</button>
+            <button class="btn-preset active" data-w="610" data-l="2440">2×8 ft Runner</button>
+            <button class="btn-preset" data-w="1220" data-l="2440">4×8 ft Sheet</button>
+            <button class="btn-preset" data-w="1000" data-l="2000">Euro (1×2m)</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="label-wrap"><span>Runway Sheet Width (W)</span><span class="val" id="lblPlateWidth">610 mm</span></div>
+          <input type="range" id="inputPlateWidth" min="250" max="1500" step="25" value="610">
+        </div>
+        <div class="form-group">
+          <div class="label-wrap"><span>Runway Sheet Length (L)</span><span class="val" id="lblPlateLength">2,440 mm</span></div>
+          <input type="range" id="inputPlateLength" min="300" max="3000" step="50" value="2440">
+        </div>
+        <div class="form-group">
+          <div class="label-wrap"><span>Plate Thickness (t)</span><span class="val" id="lblPlateThick">16 mm</span></div>
+          <input type="range" id="inputPlateThick" min="2" max="60" step="1" value="16">
+        </div>
+
+        <div class="sub-box" style="border-left: 3px solid var(--accent); background:#0b1329;">
+          <div>• <strong>Code Minimum Width (B_min = 2h):</strong> <span id="lblRecWidth" style="color:var(--accent); font-weight:700;">300 mm</span></div>
+          <div>• <strong>Required Thickness for Rigidity (t_req):</strong> <span id="lblRecThick" style="color:#fde047; font-weight:700;">11.2 mm</span></div>
+          <div style="margin-top:5px; padding-top:5px; border-top:1px dashed #334155;">
+            • <strong>Single Runway Sheet Mass:</strong> <strong id="lblPlateHandlingWeight" style="color:#86efac; font-size:12px;">18.7 kg</strong>
+            <div id="lblHandlingBadge" style="font-size:10.5px; margin-top:2px; color:#cbd5e1;">Easy 1-Man Handling</div>
+          </div>
+        </div>
+      </div>
+      <div id="plateDisabledMsg" style="font-size:11px; color:#94a3b8; padding:4px 0;">
+        Bare skate wheels roll directly on the floor. Enable plates to simulate load spreading and runway handling ergonomics.
+      </div>
+    </div>
+
+    <!-- 5. FLOOR & SLAB BOUNDARY SETTINGS -->
+    <div class="panel">
+      <div class="panel-title"><span>5. Concrete Slab & Coating Limits</span></div>
+      <div class="form-group">
+        <label class="label-wrap"><span>Allowable Surface Pressure (P_allow)</span><span class="val" id="lblFloorStress">10.0 MPa</span></label>
+        <div class="btn-group" id="btnGroupStress" style="flex-wrap: wrap;">
+          <button class="btn-preset" data-stress="5.0">5 MPa</button>
+          <button class="btn-preset active" data-stress="10.0">10 MPa (Epoxy)</button>
+          <button class="btn-preset" data-stress="15.0">15 MPa (PU)</button>
+          <button class="btn-preset" data-stress="25.0">25 MPa (C25)</button>
+        </div>
+        <input type="range" id="inputFloorStress" min="3" max="35" step="0.5" value="10" style="margin-top:6px;">
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap"><span>Concrete Slab Depth (h)</span><span class="val" id="lblSlabDepth">150 mm</span></label>
+        <div class="btn-group" id="btnGroupSlab">
+          <button class="btn-preset active" data-h="150">150 mm</button>
+          <button class="btn-preset" data-h="200">200 mm</button>
+          <button class="btn-preset" data-h="250">250 mm</button>
+          <button class="btn-preset" data-h="300">300 mm</button>
+        </div>
+        <input type="range" id="inputSlabDepth" min="100" max="350" step="10" value="150" style="margin-top:6px;">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: REAL-TIME RESULTS & VISUALIZATIONS -->
+  <div class="visuals-col">
+
+    <!-- 6 METRIC CARDS -->
+    <div class="dashboard-grid">
+      <div class="dash-card" id="cardSkateLoad">
+        <div class="meta"><span>1. SKATE POINT LOAD</span><span id="tagSkateMode">Nominal / Peak</span></div>
+        <div class="main-val" id="valSkateLoad">13.53 kN</div>
+        <div class="sub" id="subSkateLoad">Peak Rocking: 24.36 kN</div>
+        <div class="status-badge status-pass" id="badgeSkateLoad">SAFE GROUP</div>
+      </div>
+
+      <div class="dash-card" id="cardWheelLoad">
+        <div class="meta"><span>2. MAX WHEEL LOAD</span><span>EC1 Limit</span></div>
+        <div class="main-val" id="valWheelLoad">4.06 kN</div>
+        <div class="sub" id="subWheelLoad">Limit: Static 4.5 kN | Dyn 7.0 kN</div>
+        <div class="status-badge status-pass" id="badgeWheelLoad">PASS (SAFE)</div>
+      </div>
+
+      <div class="dash-card" id="cardPressure">
+        <div class="meta"><span>3. CONTACT PRESSURE</span><span>Surface Stress</span></div>
+        <div class="main-val" id="valPressure">4.20 MPa</div>
+        <div class="sub" id="subPressure">Epoxy Limit: 10.0 MPa</div>
+        <div class="status-badge status-pass" id="badgePressure">PASS (COATING SAFE)</div>
+      </div>
+
+      <div class="dash-card" id="cardDispersion">
+        <div class="meta"><span>4. SLAB SPREAD BASE</span><span>Beff + 2h</span></div>
+        <div class="main-val" id="valDispersion">620 mm</div>
+        <div class="sub" id="subDispersion">&gt; 300 mm Distributed Threshold</div>
+        <div class="status-badge status-pass" id="badgeDispersion">ZONE 3: DISTRIBUTED</div>
+      </div>
+
+      <div class="dash-card" id="cardUdl">
+        <div class="meta"><span>5. TRANSIT UDL</span><span>8.36 m² Footprint</span></div>
+        <div class="main-val" id="valUdl">0.97 ton/m²</div>
+        <div class="sub">Building Ceiling: 1.00 ton/m²</div>
+        <div class="status-badge status-pass" id="badgeUdl">PASS (SAFE UDL)</div>
+      </div>
+
+      <div class="dash-card" id="cardRigidity">
+        <div class="meta"><span>6. PLATE RIGIDITY</span><span>AISC Cantilever</span></div>
+        <div class="main-val" id="valRigidity">BARE SKATES</div>
+        <div class="sub" id="subRigidity">No Spreader Plate Installed</div>
+        <div class="status-badge status-warn" id="badgeRigidity">DIRECT ROLL</div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC LOAD TREE -->
+    <div class="tree-container">
+      <div class="tree-title">
+        <span>Load Transfer Breakdown (Static Nominal vs. Dynamic Peak)</span>
+        <span style="color:#94a3b8; font-size:11px;" id="lblTreeModeTag">Mode 2: 6-Point Rig</span>
+      </div>
+      <div class="tree-node-root">
+        <span style="font-size:10px; color:#94a3b8; text-transform:uppercase; font-weight:700;">Equipment Package Gross Load</span>
+        <div style="font-size:16px; font-weight:800; color:#38bdf8;" id="treeRootVal">8.12-Ton Gross Total / 79.66 kN</div>
+      </div>
+      <div class="tree-branches" id="treeBranchWrap"></div>
+    </div>
+
+    <!-- CANVASES -->
+    <div class="canvas-panel">
+      <div>
+        <div style="font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px; display:flex; justify-content:space-between;">
+          <span>FRONT ELEVATION: Critical Skate Bogie, Spreader Plate & 45° Slab Dispersion</span>
+          <span style="color:var(--accent); font-size:11px;" id="lblFrontElevationSub">Governing Bogie: Corner Follower</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="frontCanvas" width="940" height="360"></canvas>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px; display:flex; justify-content:space-between;">
+          <span>TOP-DOWN PLAN: 3.80 m × 2.20 m Shipping Skid with Runway Tracks</span>
+          <span style="color:var(--accent); font-size:11px;" id="lblTopPlanSub">6 Skates Positioned</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="topCanvas" width="940" height="230"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSUMPTIONS DRAWER -->
+    <details class="assumptions-box">
+      <summary>Engineering Methodology & Formulations</summary>
+      <ul>
+        <li><strong>Structural Code Minimum vs. Runway Practices:</strong> The building's structural slab mandates an absolute minimum spread width <i>B</i><sub>code, min</sub> = 2<i>h</i> (300 mm for a 150 mm slab) to transition punching shear into Zone 3 flexure. In practical transit, riggers use wider runway sheets (e.g., 610 mm or 1220 mm wide) so skates do not roll off the edge, which also significantly reduces the manual labor of leapfrogging small plates.</li>
+        <li><strong>Mode 1 (2 Powered Skates Only):</strong> Baseline benchmark. Total gross load is divided equally by 2 (50% each = 40.2 kN nominal). The powered skates are positioned at the center of the 2.20 m ends. Without outriggers, high roller loads (&gt; 10 kN) cause severe slab punching risk.</li>
+        <li><strong>Mode 2 (6-Point Perimeter Rig):</strong> 2 powered drive units (P1, P2) located at the center of the 2.20 m ends + 4 corner follower skids. Symmetrical nominal share is 1/6 each (13.5 kN). Floor rocking dynamic peak assumes 25% × 1.20 = 24.4 kN on the heaviest pivot corner, with 50% wheel ground contact.</li>
+        <li><strong>Mode 3 (Diamond 4-Point Rig):</strong> 2 powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2) on the 3.80 m sides. Nominal share is 1/4 (20.3 kN). Deceleration pitching applies 35% × 1.20 = 34.1 kN peak. Enables 360° zero-turn rotation without floor scrubbing.</li>
+        <li><strong>Spreader Plate Cantilever Mechanics (AISC Design Guide 1):</strong> Overhang cantilever distance <i>c</i> = (<i>B</i> − <i>W</i><sub>skate</sub>) / 2. Required plate thickness <i>t</i><sub>req</sub> = <i>c</i> √(3<i>p</i> / σ<sub>allow</sub>). If <i>t</i> &lt; <i>t</i><sub>req</sub>, the plate curls upward (potato chip), causing edge lift-off and concentrating the entire load as an illegal point punch.</li>
+      </ul>
+    </details>
+
+  </div>
+</div>
+
+<!-- ENTRY SCRIPT: NATIVE ES6 MODULE -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
