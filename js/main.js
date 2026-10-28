@@ -386,7 +386,8 @@ function update() {
     t_req: res.t_req,
     Beff: res.Beff,
     bottomSpread: res.bottomSpread_mm,
-    plateMat: res.plateMat
+    plateMat: res.plateMat,
+    mRiser: inputs.mRiser
   }, isDark);
 
   drawTopPlan(dom.topCanvas, activeSetup, res.nominalSkateLoad_kN, res.peakSkateLoad_kN, inputs.plateEnabled, inputs.B_plate, inputs.L_plate, isDark);
