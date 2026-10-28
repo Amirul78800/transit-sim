@@ -87,8 +87,8 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
 export function drawFrontElevation(canvas, params, isDark = true) {
   const ctx = canvas.getContext('2d');
-  const { D, numWheels, F_skate, F_wheel, hSlab, plateOn, B, t, isRigid, isCurling, t_req, Beff, bottomSpread, plateMat } = params;
-
+  const { D, numWheels, F_skate, F_wheel, hSlab, plateOn, B, t, isRigid, isCurling, t_req, Beff, bottomSpread, plateMat, mRiser = 180 } = params;
+  
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const cx = canvas.width / 2;
   const scale = 0.44;
@@ -207,17 +207,20 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   ctx.strokeStyle = slabStroke;
   ctx.strokeRect(cx - chassisW / 2, chassisY, chassisW, chassisH);
 
-  const riserH = 20;
+  const hasRiser = mRiser > 0;
+  const riserH = hasRiser ? 20 : 0;
   const riserY = chassisY - riserH;
-  ctx.fillStyle = riserFill;
-  ctx.fillRect(cx - 36, riserY, 72, riserH);
-  ctx.strokeStyle = slabStroke;
-  ctx.strokeRect(cx - 36, riserY, 72, riserH);
+  if (hasRiser) {
+    ctx.fillStyle = riserFill;
+    ctx.fillRect(cx - 36, riserY, 72, riserH);
+    ctx.strokeStyle = slabStroke;
+    ctx.strokeRect(cx - 36, riserY, 72, riserH);
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 9.5px sans-serif";
-  ctx.fillText("150mm Riser", cx, riserY + 13);
-
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 9.5px sans-serif";
+    ctx.fillText(`${mRiser}kg Riser`, cx, riserY + 13);
+  }
+  
   for (let i = 0; i < numAxles; i++) {
     const ax = startX + i * axleSpacing * scale;
     ctx.beginPath();
