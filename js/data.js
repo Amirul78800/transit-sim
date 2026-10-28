@@ -13,12 +13,76 @@ export const MAT_DATA = {
 
 // Spreader Plate Material Database
 export const PLATE_MAT_DATA = {
-  ss400:   { name: "SS400 / S275 Mild Steel", fy: 275, sigma_allow: 180, rho: 7850, E: 210000 },
-  s355:    { name: "S355 High-Strength Steel", fy: 355, sigma_allow: 235, rho: 7850, E: 210000 },
-  al6061:  { name: "Aluminum 6061-T6",        fy: 276, sigma_allow: 160, rho: 2700, E: 70000  },
-  plywood: { name: "Phenolic Birch Plywood",  fy: 32,  sigma_allow: 16,  rho: 750,  E: 9000   },
-  uhmwpe:  { name: "UHMWPE Outrigger Plastic",fy: 22,  sigma_allow: 10,  rho: 960,  E: 1000   },
-  hardwood:{ name: "Hardwood Dunnage (Kempas)",fy: 50,  sigma_allow: 25,  rho: 900,  E: 14000  }
+  ss400: {
+    name: "SS400 / S275JR (fy = 275 MPa)",
+    fy: 275,
+    sigma_allow: 180,
+    rho: 7850,
+    E: 205000
+  },
+  s355: {
+    name: "S355J2 / A572-50 (fy = 355 MPa)",
+    fy: 355,
+    sigma_allow: 235,
+    rho: 7850,
+    E: 210000
+  },
+  strenx700: {
+    name: "Strenx 700 (fy = 700 MPa)",
+    fy: 700,
+    sigma_allow: 450,
+    rho: 7850,
+    E: 210000
+  },
+  hardox450: {
+    name: "Hardox 450 (fy = 1,200 MPa)",
+    fy: 1200,
+    sigma_allow: 600,
+    rho: 7850,
+    E: 210000
+  },
+  al6061: {
+    name: "Aluminum 6061-T6 (fy = 276 MPa)",
+    fy: 276,
+    sigma_allow: 165,
+    rho: 2700,
+    E: 69000
+  },
+  al7075: {
+    name: "Aluminum 7075-T6 (fy = 505 MPa)",
+    fy: 505,
+    sigma_allow: 320,
+    rho: 2810,
+    E: 72000
+  },
+  cfrp: {
+    name: "Carbon Fiber CFRP (fy = 600 MPa)",
+    fy: 600,
+    sigma_allow: 350,
+    rho: 1550,
+    E: 85000
+  },
+  g10: {
+    name: "G10 / FR-4 Epoxy Glass (fy = 340 MPa)",
+    fy: 340,
+    sigma_allow: 200,
+    rho: 1850,
+    E: 24000
+  },
+  uhmwpe: {
+    name: "UHMWPE Polymer (fy = 25 MPa)",
+    fy: 25,
+    sigma_allow: 14,
+    rho: 960,
+    E: 1100
+  },
+  plywood: {
+    name: "Phenolic Birch Plywood (fy = 35 MPa)",
+    fy: 35,
+    sigma_allow: 20,
+    rho: 750,
+    E: 9500
+  }
 };
 
 // Follower Skate Catalog Specs
