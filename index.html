@@ -149,17 +149,29 @@
       </div>
 
       <div id="plateControls" style="display:none;">
-        <div class="form-group">
-          <div class="label-wrap"><span>Plate Material</span></div>
-          <select id="selectPlateSteel">
-            <option value="ss400" selected>SS400 / S275 Structural Mild Steel</option>
-            <option value="s355">S355 High-Strength Steel</option>
-            <option value="al6061">Aluminum 6061-T6 (Lightweight Metal)</option>
-            <option value="plywood">Phenolic Film-Faced Birch Plywood (Formwork Ply)</option>
-            <option value="uhmwpe">UHMWPE / HDPE Rigging Mat Plastic</option>
-            <option value="hardwood">Heavy Hardwood Timber (Kempas / Keruing / Oak)</option>
-          </select>
-        </div>
+        <div class="form-group"> 
+        <div class="label-wrap"><span>Plate Material (10 Engineering Grades)</span></div>
+        <select id="selectPlateSteel">
+          <optgroup label="Structural & High-Strength Steels">
+            <option value="ss400" selected>SS400 / S275JR (fy = 275 MPa)</option>
+            <option value="s355">S355J2 / A572-50 (fy = 355 MPa)</option>
+            <option value="strenx700">Strenx 700 (fy = 700 MPa)</option>
+            <option value="hardox450">Hardox 450 (fy = 1,200 MPa)</option>
+          </optgroup>
+          <optgroup label="Lightweight Structural Metals">
+            <option value="al6061">Aluminum 6061-T6 (fy = 276 MPa)</option>
+            <option value="al7075">Aluminum 7075-T6 (fy = 505 MPa)</option>
+          </optgroup>
+          <optgroup label="Advanced Composites & Cleanroom">
+            <option value="cfrp">Carbon Fiber CFRP (fy = 600 MPa)</option>
+            <option value="g10">G10 / FR-4 Epoxy Glass (fy = 340 MPa)</option>
+          </optgroup>
+          <optgroup label="Floor-Safe Polymers & Timber">
+            <option value="uhmwpe">UHMWPE Mat Polymer (fy = 25 MPa)</option>
+            <option value="plywood">Phenolic Birch Plywood (fy = 35 MPa)</option>
+          </optgroup>
+        </select>
+      </div>
 
         <div class="form-group">
           <label class="label-wrap"><span>Runway Track Format Presets</span></label>
