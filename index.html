@@ -160,12 +160,21 @@
           <input type="range" id="inputPlateThick" min="2" max="60" step="1" value="16">
         </div>
 
-        <div class="sub-box" style="border-left: 3px solid var(--accent); background:#0b1329;">
-          <div>• <strong>Code Minimum Width (B_min = 2h):</strong> <span id="lblRecWidth" style="color:var(--accent); font-weight:700;">300 mm</span></div>
-          <div>• <strong>Required Thickness for Rigidity (t_req):</strong> <span id="lblRecThick" style="color:#fde047; font-weight:700;">11.2 mm</span></div>
-          <div style="margin-top:5px; padding-top:5px; border-top:1px dashed #334155;">
-            • <strong>Single Runway Sheet Mass:</strong> <strong id="lblPlateHandlingWeight" style="color:#86efac; font-size:12px;">18.7 kg</strong>
-            <div id="lblHandlingBadge" style="font-size:10.5px; margin-top:2px; color:#cbd5e1;">Easy 1-Man Handling</div>
+        <div class="sub-box sub-box-highlight">
+          <div class="sub-box-row">
+            <span>Code Minimum Width (B_min = 2h):</span>
+            <strong id="lblRecWidth" class="val-accent">300 mm</strong>
+          </div>
+          <div class="sub-box-row">
+            <span>Required Rigidity Thickness (t_req):</span>
+            <strong id="lblRecThick" class="val-warn">11.2 mm</strong>
+          </div>
+          <div class="sub-box-divider">
+            <div class="sub-box-row">
+              <span>Single Runway Sheet Mass:</span>
+              <strong id="lblPlateHandlingWeight">18.7 kg</strong>
+            </div>
+            <div id="lblHandlingBadge" style="font-size:10.5px; margin-top:2px;">Easy 1-Man Handling</div>
           </div>
         </div>
       </div>
