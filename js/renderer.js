@@ -111,7 +111,6 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
   container.innerHTML = html;
 }
-
 export function drawFrontElevation(canvas, params, isDark = true) {
   const ctx = canvas.getContext('2d');
   const { D, numWheels, F_skate, F_wheel, hSlab, plateOn, B, t, isRigid, isCurling, t_req, Beff, bottomSpread, plateMat, mRiser = 180 } = params;
