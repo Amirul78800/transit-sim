@@ -178,9 +178,9 @@ function bindEvents() {
   });
 
   // Setup mode toggles
-  document.getElementById('btnSetup1').addEventListener('click', () => setMode(1));
-  document.getElementById('btnSetup2').addEventListener('click', () => setMode(2));
-  document.getElementById('btnSetup3').addEventListener('click', () => setMode(3));
+  document.getElementById('btnSetup1').addEventListener('click', () => (1));
+  document.getElementById('btnSetup2').addEventListener('click', () => (2));
+  document.getElementById('btnSetup3').addEventListener('click', () => (3));
 }
 
 function setMode(mode) {
@@ -192,19 +192,19 @@ function setMode(mode) {
   if (mode === 1) {
     dom.lblSetupSummary.innerText = "Mode 1: 2-Skates Only (Baseline)";
     dom.setupDesc.innerHTML = "<strong style='color:var(--fail);'>Baseline Mode:</strong> 2 powered skates at the center of the 2.20 m ends carry 100% of the load (50% each). High wheel loads (>10 kN) cause severe slab punching risk.";
-    dom.lblTreeModeTag.innerText = "MODE 1: 2-SKATES ONLY";
+    dom.lblTreeModeTag.innerText = "MODE 1: 2-SKATES ONLY"; // <-- Fixes the stuck tag
     dom.panelFollower.style.opacity = "0.5";
     dom.panelFollower.style.pointerEvents = "none";
   } else if (mode === 2) {
     dom.lblSetupSummary.innerText = "Mode 2: 6-Point Perimeter Rig";
     dom.setupDesc.innerHTML = "<strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical load division with 3-point floor rocking simulation.";
-    dom.lblTreeModeTag.innerText = "MODE 2: 6-POINT RIG";
+    dom.lblTreeModeTag.innerText = "MODE 2: 6-POINT RIG"; // <-- Fixes the stuck tag
     dom.panelFollower.style.opacity = "1";
     dom.panelFollower.style.pointerEvents = "auto";
   } else {
     dom.lblSetupSummary.innerText = "Mode 3: Diamond 4-Point Rig";
     dom.setupDesc.innerHTML = "<strong style='color:var(--accent);'>360° Zero-Turn Rig:</strong> 2 center-edge powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2). Pure center spin with zero floor scrubbing.";
-    dom.lblTreeModeTag.innerText = "MODE 3: DIAMOND 4-PT";
+    dom.lblTreeModeTag.innerText = "MODE 3: DIAMOND 4-PT"; // <-- Fixes the stuck tag
     dom.panelFollower.style.opacity = "1";
     dom.panelFollower.style.pointerEvents = "auto";
   }
@@ -373,8 +373,14 @@ function update() {
   }
 
  // Render Visuals with current theme awareness
-  renderLoadTree(dom.treeBranchWrap, activeSetup, res.grossMass, res.grossWeight_kN, res.activeFollowerWheels, inputs.nFollowerWheels);
-
+  renderLoadTree(
+    dom.treeBranchWrap, 
+    activeSetup, 
+    res.grossMass, 
+    res.grossWeight_kN, 
+    res.activeFollowerWheels, 
+    inputs.nFollowerWheels
+  );
   drawFrontElevation(dom.frontCanvas, {
     D: res.wheelDia,
     numWheels: res.governingIsPowered ? 4 : inputs.nFollowerWheels,
