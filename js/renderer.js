@@ -308,12 +308,13 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, logicalW, logicalH);
   const cx = logicalW / 2;
-  const cy = logicalH / 2 - 8;
 
-  const skidW_px = 560;
-  const skidH_px = 125;
+  // Balanced visual layout with ample clearances
+  const skidW_px = 580;
+  const skidH_px = 120;
   const skidX = cx - skidW_px / 2;
-  const skidY = cy - skidH_px / 2;
+  const skidY = 50; // top border at y=50, bottom border at y=170
+  const cy = skidY + skidH_px / 2; // y=110
 
   // Theme-aware colors
   const skidFill = isDark ? "#1e293b" : "#e2e8f0";
@@ -326,97 +327,134 @@ export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, 
   ctx.fillStyle = skidFill;
   ctx.fillRect(skidX, skidY, skidW_px, skidH_px);
   ctx.strokeStyle = skidStroke;
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 2;
   ctx.strokeRect(skidX, skidY, skidW_px, skidH_px);
 
+  // Top Length Dimension Arrow (positioned at y=24, safely clear of skid and runway)
   ctx.fillStyle = accentColor;
   ctx.font = "bold 11px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("◄─────────────────────── 3.80 m Shipping Skid Length ───────────────────────►", cx, skidY - 10);
+  ctx.fillText("◄─────────────────────── 3.80 m Shipping Skid Length ───────────────────────►", cx, 24);
 
+  // Left Width Dimension Arrow
   ctx.save();
-  ctx.translate(skidX - 14, cy);
+  ctx.translate(skidX - 16, cy);
   ctx.rotate(-Math.PI / 2);
   ctx.fillStyle = labelColor;
   ctx.font = "bold 11px sans-serif";
   ctx.fillText("2.20 m Width", 0, 0);
   ctx.restore();
 
-  // 2. Skates
-  const edgePad = 12;
+  // 2. Skates positioning
+  const edgePadX = 22;
+  const edgePadY = 18;
   const skates = [
-    { id: "P1", x: skidX + edgePad, y: cy, isPowered: true },
-    { id: "P2", x: skidX + skidW_px - edgePad, y: cy, isPowered: true }
+    { id: "P1", x: skidX + edgePadX, y: cy, isPowered: true },
+    { id: "P2", x: skidX + skidW_px - edgePadX, y: cy, isPowered: true }
   ];
 
   if (activeSetup === 2) {
-    skates.push({ id: "C1", x: skidX + edgePad, y: skidY + edgePad, isPowered: false });
-    skates.push({ id: "C2", x: skidX + edgePad, y: skidY + skidH_px - edgePad, isPowered: false });
-    skates.push({ id: "C3", x: skidX + skidW_px - edgePad, y: skidY + edgePad, isPowered: false });
-    skates.push({ id: "C4", x: skidX + skidW_px - edgePad, y: skidY + skidH_px - edgePad, isPowered: false });
+    skates.push({ id: "C1", x: skidX + edgePadX, y: skidY + edgePadY, isPowered: false });
+    skates.push({ id: "C2", x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
+    skates.push({ id: "C3", x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
+    skates.push({ id: "C4", x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
   } else if (activeSetup === 3) {
-    skates.push({ id: "F1", x: cx, y: skidY + edgePad, isPowered: false });
-    skates.push({ id: "F2", x: cx, y: skidY + skidH_px - edgePad, isPowered: false });
+    skates.push({ id: "F1", x: cx, y: skidY + edgePadY, isPowered: false });
+    skates.push({ id: "F2", x: cx, y: skidY + skidH_px - edgePadY, isPowered: false });
   }
 
-  // Draw Continuous Runway Tracks if Plate is Enabled
+  // 3. Draw Runway Plates if Enabled
   if (plateOn) {
-    ctx.fillStyle = isDark ? "rgba(126, 34, 206, 0.4)" : "rgba(168, 85, 247, 0.25)";
+    ctx.fillStyle = isDark ? "rgba(126, 34, 206, 0.35)" : "rgba(168, 85, 247, 0.22)";
     ctx.strokeStyle = isDark ? "#c084fc" : "#9333ea";
     ctx.lineWidth = 1.5;
 
-    const trackH_px = Math.max(20, Math.min(50, (B / 2200) * skidH_px * 2.2));
-    const trackW_px = Math.min(skidW_px + 60, Math.max(skidW_px, (L / 3800) * skidW_px));
+    // Physically proportional track width (B mm vs 2200 mm skid width)
+    const trackH_px = Math.max(26, Math.min(48, (B / 2200) * skidH_px));
+    const trackW_px = skidW_px + 36; // extends 18px past skid ends
 
     if (activeSetup === 2) {
-      ctx.fillRect(skidX - 20, skidY - trackH_px / 4, trackW_px, trackH_px);
-      ctx.strokeRect(skidX - 20, skidY - trackH_px / 4, trackW_px, trackH_px);
-      ctx.fillRect(skidX - 20, skidY + skidH_px - (trackH_px * 3 / 4), trackW_px, trackH_px);
-      ctx.strokeRect(skidX - 20, skidY + skidH_px - (trackH_px * 3 / 4), trackW_px, trackH_px);
+      // Top continuous runner track centered on C1-C3
+      const topTrackY = (skidY + edgePadY) - trackH_px / 2;
+      ctx.fillRect(skidX - 18, topTrackY, trackW_px, trackH_px);
+      ctx.strokeRect(skidX - 18, topTrackY, trackW_px, trackH_px);
+
+      // Bottom continuous runner track centered on C2-C4
+      const botTrackY = (skidY + skidH_px - edgePadY) - trackH_px / 2;
+      ctx.fillRect(skidX - 18, botTrackY, trackW_px, trackH_px);
+      ctx.strokeRect(skidX - 18, botTrackY, trackW_px, trackH_px);
+
+      // Dedicated spreader pads under Powered Units P1 & P2
+      const padW = Math.max(44, Math.min(80, (L / 3800) * 110));
+      const padH = trackH_px;
+      ctx.fillRect(skates[0].x - padW / 2, cy - padH / 2, padW, padH);
+      ctx.strokeRect(skates[0].x - padW / 2, cy - padH / 2, padW, padH);
+      ctx.fillRect(skates[1].x - padW / 2, cy - padH / 2, padW, padH);
+      ctx.strokeRect(skates[1].x - padW / 2, cy - padH / 2, padW, padH);
     } else {
+      // Individual spreader pads under active skates for Mode 1 & Mode 3
+      const padW = Math.max(46, Math.min(85, (L / 3800) * 120));
+      const padH = trackH_px;
       skates.forEach(sk => {
-        const pBoxW = Math.max(28, (L / 3800) * 120);
-        const pBoxH = Math.max(24, (B / 2200) * 80);
-        ctx.fillRect(sk.x - pBoxW / 2, sk.y - pBoxH / 2, pBoxW, pBoxH);
-        ctx.strokeRect(sk.x - pBoxW / 2, sk.y - pBoxH / 2, pBoxW, pBoxH);
+        ctx.fillRect(sk.x - padW / 2, sk.y - padH / 2, padW, padH);
+        ctx.strokeRect(sk.x - padW / 2, sk.y - padH / 2, padW, padH);
       });
     }
   }
 
-  // Draw Skates
+  // 4. Draw Skate Bogies & Annotated Values
   const skateW = 34;
   const skateH = 22;
 
   skates.forEach(sk => {
+    // Bogie Body
     ctx.fillStyle = sk.isPowered ? (isDark ? "#0284c7" : "#0284c7") : (isDark ? "#15803d" : "#16a34a");
     ctx.fillRect(sk.x - skateW / 2, sk.y - skateH / 2, skateW, skateH);
     ctx.strokeStyle = sk.isPowered ? (isDark ? "#38bdf8" : "#38bdf8") : (isDark ? "#4ade80" : "#22c55e");
     ctx.lineWidth = 1.5;
     ctx.strokeRect(sk.x - skateW / 2, sk.y - skateH / 2, skateW, skateH);
 
+    // Bogie ID
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 9px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(sk.id, sk.x, sk.y + 3);
 
+    // Load Text
     let loadStr = `${nomLoad.toFixed(1)} kN`;
     if (activeSetup === 1) loadStr = `${nomLoad.toFixed(1)} kN`;
     if (activeSetup === 2 && sk.id === "C1") loadStr = `Peak: ${peakLoad.toFixed(1)} kN`;
     if (activeSetup === 3 && sk.id === "F1") loadStr = `Peak: ${peakLoad.toFixed(1)} kN`;
 
+    // Position load text cleanly inside skid with pill background
+    let labelY = sk.y;
+    if (sk.y < cy) {
+      labelY = sk.y + skateH / 2 + 12; // below top skates, safely inside skid
+    } else if (sk.y > cy) {
+      labelY = sk.y - skateH / 2 - 4;  // above bottom skates, safely inside skid
+    } else {
+      labelY = sk.y - skateH / 2 - 4;  // above center powered skates
+    }
+
+    ctx.save();
     ctx.font = "bold 9px sans-serif";
+    const txtW = ctx.measureText(loadStr).width;
+    ctx.fillStyle = isDark ? "rgba(15, 23, 42, 0.9)" : "rgba(255, 255, 255, 0.9)";
+    ctx.fillRect(sk.x - txtW / 2 - 4, labelY - 8, txtW + 8, 11);
     ctx.fillStyle = labelColor;
-    const labelY = (sk.y < cy) ? sk.y - 14 : sk.y + 22;
+    ctx.textAlign = "center";
     ctx.fillText(loadStr, sk.x, labelY);
+    ctx.restore();
   });
 
-  // Footer Legend
+  // 5. Footer Legend (positioned at y = 196)
   ctx.fillStyle = legendColor;
   ctx.font = "11px sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText("■ Blue: TS-10T Powered Skates (Center of 2.20 m ends)", skidX, skidY + skidH_px + 22);
-  ctx.fillText("■ Green: Passive Follower Skates", skidX + 310, skidY + skidH_px + 22);
+  const legY = skidY + skidH_px + 26;
+  ctx.fillText("■ Blue: TS-10T Powered Skates (Center of 2.20 m ends)", skidX, legY);
+  ctx.fillText("■ Green: Passive Follower Skates", skidX + 310, legY);
   if (plateOn) {
-    ctx.fillText("■ Purple: Continuous Runway Track", skidX + 500, skidY + skidH_px + 22);
+    ctx.fillText("■ Purple: Continuous Runway Tracks & Pads", skidX + 510, legY);
   }
 }
