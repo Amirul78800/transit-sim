@@ -62,7 +62,7 @@
         <button class="setup-btn" id="btnSetup3" role="tab" aria-selected="false">3. Diamond 4-Pt</button>
       </div>
       <div class="sub-box" id="setupDesc" role="status">
-        <strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical load division with 3-point floor rocking simulation.
+        <strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical nominal share with 3-point floor rocking & maneuvering allowance (φ = 1.20).
       </div>
     </div>
 
@@ -255,14 +255,14 @@
       <div class="dash-card" id="cardSkateLoad">
         <div class="meta"><span>1. SKATE POINT LOAD</span><span id="tagSkateMode">Nominal / Peak</span></div>
         <div class="main-val" id="valSkateLoad">13.53 kN</div>
-        <div class="sub" id="subSkateLoad">Peak Rocking: 24.36 kN</div>
+        <div class="sub" id="subSkateLoad">Peak Operational: 24.36 kN</div>
         <div class="status-badge status-pass" id="badgeSkateLoad">SAFE GROUP</div>
       </div>
 
       <div class="dash-card" id="cardWheelLoad">
         <div class="meta"><span>2. MAX WHEEL LOAD</span><span>EC1 Limit</span></div>
         <div class="main-val" id="valWheelLoad">4.06 kN</div>
-        <div class="sub" id="subWheelLoad">Limit: Static 4.5 kN | Dyn 7.0 kN</div>
+        <div class="sub" id="subWheelLoad">Limit: Static 4.5 kN | Operational Peak 7.0 kN</div>
         <div class="status-badge status-pass" id="badgeWheelLoad">PASS (SAFE)</div>
       </div>
 
@@ -298,7 +298,7 @@
     <!-- DYNAMIC LOAD TREE -->
     <div class="tree-container" role="region" aria-label="Load Transfer Hierarchy">
       <div class="tree-title">
-        <span>Load Transfer Breakdown (Static Nominal vs. Dynamic Peak)</span>
+        <span>Load Transfer Breakdown (Static Nominal vs. Peak Operational)</span>
         <span style="color:var(--text-secondary); font-size:11px;" id="lblTreeModeTag">Mode 2: 6-Point Rig</span>
       </div>
       <div class="tree-node-root">
@@ -336,8 +336,9 @@
       <summary>Engineering Methodology & Formulations</summary>
       <ul>
         <li><strong>Structural Code Minimum vs. Runway Practices:</strong> The building's structural slab mandates an absolute minimum spread width <i>B</i><sub>code, min</sub> = 2<i>h</i> (300 mm for a 150 mm slab) to transition punching shear into Zone 3 flexure. In practical transit, riggers use wider runway sheets (e.g., 610 mm or 1220 mm wide) so skates do not roll off the edge, which also significantly reduces the manual labor of leapfrogging small plates.</li>
+        <li><strong>Peak Operational Load Mechanics (Rocking vs. Dynamic Inertia):</strong> Equipment transit at creeping speeds (&lt; 0.1 m/s) does not involve high-velocity inertial acceleration (<i>F = ma</i>). Instead, the governing peak operational load accounts for two real-world site conditions: (1) <strong>3-point floor out-of-flatness rocking</strong>, where concrete slab leveling tolerances shift 25%–35% of gross load onto a pivot corner, and (2) a <strong>quasi-static maneuvering allowance (φ = 1.20)</strong> per EN 1991-3 covering motor drive starting torque, stopping pitch, and wheel crossover at slab construction joints.</li>
         <li><strong>Mode 1 (2 Powered Skates Only):</strong> Baseline benchmark. Total gross load is divided equally by 2 (50% each = 40.2 kN nominal). The powered skates are positioned at the center of the 2.20 m ends. Without outriggers, high roller loads (&gt; 10 kN) cause severe slab punching risk.</li>
-        <li><strong>Mode 2 (6-Point Perimeter Rig):</strong> 2 powered drive units (P1, P2) located at the center of the 2.20 m ends + 4 corner follower skids. Symmetrical nominal share is 1/6 each (13.5 kN). Floor rocking dynamic peak assumes 25% × 1.20 = 24.4 kN on the heaviest pivot corner, with 50% wheel ground contact.</li>
+        <li><strong>Mode 2 (6-Point Perimeter Rig):</strong> 2 powered drive units (P1, P2) located at the center of the 2.20 m ends + 4 corner follower skids. Symmetrical nominal share is 1/6 each (13.5 kN). Floor rocking & maneuvering peak assumes 25% × 1.20 = 24.4 kN on the heaviest pivot corner, with 50% wheel ground contact.</li>
         <li><strong>Mode 3 (Diamond 4-Point Rig):</strong> 2 powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2) on the 3.80 m sides. Nominal share is 1/4 (20.3 kN). Deceleration pitching applies 35% × 1.20 = 34.1 kN peak. Enables 360° zero-turn rotation without floor scrubbing.</li>
         <li><strong>Spreader Plate Cantilever Mechanics (AISC Design Guide 1):</strong> Overhang cantilever distance <i>c</i> = (<i>B</i> − <i>W</i><sub>skate</sub>) / 2. Required plate thickness <i>t</i><sub>req</sub> = <i>c</i> √(3<i>p</i> / σ<sub>allow</sub>). If <i>t</i> &lt; <i>t</i><sub>req</sub>, the plate curls upward (potato chip), causing edge lift-off and concentrating the entire load as an illegal point punch.</li>
       </ul>

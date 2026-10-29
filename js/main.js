@@ -223,13 +223,13 @@ function setMode(mode) {
     dom.panelFollower.style.pointerEvents = "none";
   } else if (mode === 2) {
     dom.lblSetupSummary.innerText = "Mode 2: 6-Point Perimeter Rig";
-    dom.setupDesc.innerHTML = "<strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical load division with 3-point floor rocking simulation.";
+    dom.setupDesc.innerHTML = "<strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical nominal share with 3-point floor rocking & maneuvering allowance (φ = 1.20).";
     dom.lblTreeModeTag.innerText = "MODE 2: 6-POINT RIG";
     dom.panelFollower.style.opacity = "1";
     dom.panelFollower.style.pointerEvents = "auto";
   } else {
     dom.lblSetupSummary.innerText = "Mode 3: Diamond 4-Point Rig";
-    dom.setupDesc.innerHTML = "<strong style='color:var(--accent);'>360° Zero-Turn Rig:</strong> 2 center-edge powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2). Pure center spin with zero floor scrubbing.";
+    dom.setupDesc.innerHTML = "<strong style='color:var(--accent);'>360° Zero-Turn Rig:</strong> 2 center-edge powered units (P1, P2) at the 2.20 m ends + 2 centerline swivel bogies (F1, F2). Pure center spin with maneuvering & pitching allowance (φ = 1.20).";
     dom.lblTreeModeTag.innerText = "MODE 3: DIAMOND 4-PT";
     dom.panelFollower.style.opacity = "1";
     dom.panelFollower.style.pointerEvents = "auto";
@@ -327,7 +327,7 @@ function update() {
 
   // Update Dashboard Cards
   dom.valSkateLoad.innerText = `${res.nominalSkateLoad_kN.toFixed(2)} kN`;
-  dom.subSkateLoad.innerText = `Dynamic Peak: ${res.peakSkateLoad_kN.toFixed(2)} kN`;
+  dom.subSkateLoad.innerText = `Peak Operational: ${res.peakSkateLoad_kN.toFixed(2)} kN`;
   if (res.isSpreadOK) {
     dom.badgeSkateLoad.className = "status-badge status-pass";
     dom.badgeSkateLoad.innerText = "SPREAD BY RUNWAY (ZONE 3)";
@@ -349,14 +349,14 @@ function update() {
     dom.subWheelLoad.innerText = "Load bridged by wide track (No local punch)";
     dom.cardWheelLoad.className = "dash-card card-pass";
   } else {
-    dom.subWheelLoad.innerText = "Limit: Static 4.5 kN | Dyn 7.0 kN";
+    dom.subWheelLoad.innerText = "Limit: Static 4.5 kN | Operational Peak 7.0 kN";
     if (res.wheelLoad_kN <= 4.50) {
       dom.badgeWheelLoad.className = "status-badge status-pass";
-      dom.badgeWheelLoad.innerText = "PASS (STATIC & DYN)";
+      dom.badgeWheelLoad.innerText = "PASS (STATIC & TRANSIT)";
       dom.cardWheelLoad.className = "dash-card card-pass";
     } else if (res.wheelLoad_kN <= 7.00) {
       dom.badgeWheelLoad.className = "status-badge status-warn";
-      dom.badgeWheelLoad.innerText = "PASS (< 7.0 kN DYN)";
+      dom.badgeWheelLoad.innerText = "PASS (< 7.0 kN TRANSIT)";
       dom.cardWheelLoad.className = "dash-card card-warn";
     } else {
       dom.badgeWheelLoad.className = "status-badge status-fail";
@@ -415,10 +415,10 @@ function update() {
     dom.badgeRigidity.innerText = "PASS (RUNWAY STIFF)";
     dom.cardRigidity.className = "dash-card card-pass";
   } else {
-    dom.valRigidity.innerText = "FLEXIBLE / CURLING";
+    dom.valRigidity.innerText = "CANTILEVER EDGE CURL";
     dom.subRigidity.innerText = `t = ${inputs.t_plate} mm < t_req (${res.t_req.toFixed(1)} mm)`;
     dom.badgeRigidity.className = "status-badge status-fail";
-    dom.badgeRigidity.innerText = "POTATO-CHIP LIFT-OFF";
+    dom.badgeRigidity.innerText = "AISC EDGE LIFT-OFF";
     dom.cardRigidity.className = "dash-card card-fail";
   }
 

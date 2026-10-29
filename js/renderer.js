@@ -17,21 +17,21 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Front Skate: 50% ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Static: ${skateStatic_kN} kN | Dynamic Peak: ${skateDyn_kN} kN
+          Nominal: ${skateStatic_kN} kN | Peak Operational: ${skateDyn_kN} kN
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC LOAD<strong>${rollerStatic_kN} kN / roller</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong style="color:var(--fail);">${rollerDyn_kN} kN / roller</strong></div>
+          <div class="tree-leaf">NOMINAL STATIC<strong>${rollerStatic_kN} kN / roller</strong></div>
+          <div class="tree-leaf">PEAK OPERATIONAL<strong style="color:var(--fail);">${rollerDyn_kN} kN / roller</strong></div>
         </div>
       </div>
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Rear Skate: 50% ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Static: ${skateStatic_kN} kN | Dynamic Peak: ${skateDyn_kN} kN
+          Nominal: ${skateStatic_kN} kN | Peak Operational: ${skateDyn_kN} kN
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC LOAD<strong>${rollerStatic_kN} kN / roller</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong style="color:var(--fail);">${rollerDyn_kN} kN / roller</strong></div>
+          <div class="tree-leaf">NOMINAL STATIC<strong>${rollerStatic_kN} kN / roller</strong></div>
+          <div class="tree-leaf">PEAK OPERATIONAL<strong style="color:var(--fail);">${rollerDyn_kN} kN / roller</strong></div>
         </div>
       </div>
     `;
@@ -53,21 +53,21 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--accent); font-weight:700;">[ 2x Powered Drive Skates: 33.3% ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Static: ${pStatic_kN} kN | Dynamic Peak: ${pDyn_kN} kN
+          Nominal: ${pStatic_kN} kN | Peak Operational: ${pDyn_kN} kN
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC LOAD<strong>${pRollerStatic_kN} kN / roller</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong>${pRollerDyn_kN} kN / roller</strong></div>
+          <div class="tree-leaf">NOMINAL STATIC<strong>${pRollerStatic_kN} kN / roller</strong></div>
+          <div class="tree-leaf">PEAK OPERATIONAL<strong>${pRollerDyn_kN} kN / roller</strong></div>
         </div>
       </div>
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--pass); font-weight:700;">[ 4x Corner Follower Skates: 66.7% ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Static: ${cStatic_kN} kN | Dynamic Peak: ${cDyn_kN} kN
+          Nominal: ${cStatic_kN} kN | Peak Rocking Pivot: ${cDyn_kN} kN
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC LOAD<strong>${cWheelStatic_kN} kN / wheel</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong style="${cWheelDyn_kN > 7.0 ? 'color:var(--fail);' : ''}">${cWheelDyn_kN} kN / wheel</strong></div>
+          <div class="tree-leaf">NOMINAL STATIC<strong>${cWheelStatic_kN} kN / wheel</strong></div>
+          <div class="tree-leaf">PEAK OPERATIONAL<strong style="${cWheelDyn_kN > 7.0 ? 'color:var(--fail);' : ''}">${cWheelDyn_kN} kN / wheel</strong></div>
         </div>
       </div>
     `;
@@ -89,21 +89,21 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--accent); font-weight:700;">[ 2x Center Powered Units: 50.0% ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Static: ${pStatic_kN} kN | Dynamic Peak: ${pDyn_kN} kN
+          Nominal: ${pStatic_kN} kN | Peak Operational: ${pDyn_kN} kN
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC LOAD<strong>${pRollerStatic_kN} kN / roller</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong>${pRollerDyn_kN} kN / roller</strong></div>
+          <div class="tree-leaf">NOMINAL STATIC<strong>${pRollerStatic_kN} kN / roller</strong></div>
+          <div class="tree-leaf">PEAK OPERATIONAL<strong>${pRollerDyn_kN} kN / roller</strong></div>
         </div>
       </div>
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--pass); font-weight:700;">[ 2x Swivel Bogies (Front/Rear): 50.0% ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Static: ${fStatic_kN} kN | Dynamic Peak: ${fDyn_kN} kN
+          Nominal: ${fStatic_kN} kN | Peak Pitching Pivot: ${fDyn_kN} kN
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC LOAD<strong>${fWheelStatic_kN} kN / wheel</strong></div>
-          <div class="tree-leaf">DYNAMIC PEAK<strong style="${fWheelDyn_kN > 7.0 ? 'color:var(--fail);' : ''}">${fWheelDyn_kN} kN / wheel</strong></div>
+          <div class="tree-leaf">NOMINAL STATIC<strong>${fWheelStatic_kN} kN / wheel</strong></div>
+          <div class="tree-leaf">PEAK OPERATIONAL<strong style="${fWheelDyn_kN > 7.0 ? 'color:var(--fail);' : ''}">${fWheelDyn_kN} kN / wheel</strong></div>
         </div>
       </div>
     `;
@@ -223,7 +223,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
 
       ctx.fillStyle = "#dc2626";
       ctx.font = "bold 10px sans-serif";
-      ctx.fillText("▲ LIFT-OFF (POTATO-CHIP)", cx - pW / 2 + 10, slabTopY - lift - 5);
+      ctx.fillText("▲ AISC EDGE LIFT-OFF (POTATO-CHIP)", cx - pW / 2 + 10, slabTopY - lift - 5);
       ctx.fillText("▲ LIFT-OFF", cx + pW / 2 - 10, slabTopY - lift - 5);
     }
   }
@@ -289,7 +289,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   ctx.stroke();
 
   ctx.font = "bold 13px sans-serif";
-  ctx.fillText(`Peak F_skate = ${F_skate.toFixed(2)} kN (${numWheels}w @ ${F_wheel.toFixed(2)} kN/w)`, cx, arrowTopY - 8);
+  ctx.fillText(`Peak Operational F_skate = ${F_skate.toFixed(2)} kN (${numWheels}w @ ${F_wheel.toFixed(2)} kN/w)`, cx, arrowTopY - 8);
 }
 
 export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, L, isDark = true) {
