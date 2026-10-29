@@ -5,6 +5,8 @@ import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js';
 // Application State
 let activeSetup = 2;
 let currentTheme = 'dark'; // 'dark' | 'light'
+let cachedInputs = null;
+let cachedResults = null;
 
 // DOM Cache
 const dom = {
@@ -82,6 +84,7 @@ const dom = {
   cardRigidity: document.getElementById('cardRigidity'),
 
   // Visuals
+  lblTreeModeTag: document.getElementById('lblTreeModeTag'),
   treeBranchWrap: document.getElementById('treeBranchWrap'),
   frontCanvas: document.getElementById('frontCanvas'),
   topCanvas: document.getElementById('topCanvas')
@@ -181,13 +184,36 @@ function bindEvents() {
   document.getElementById('btnSetup1').addEventListener('click', () => setMode(1));
   document.getElementById('btnSetup2').addEventListener('click', () => setMode(2));
   document.getElementById('btnSetup3').addEventListener('click', () => setMode(3));
+
+  // Window resize handler for crisp canvas rendering
+  window.addEventListener('resize', () => {
+    requestAnimationFrame(update);
+  });
+
+  // Print lifecycle: ensure canvases render on pure white paper
+  window.addEventListener('beforeprint', () => {
+    if (cachedInputs && cachedResults) {
+      renderCanvases(cachedInputs, cachedResults, false); // Light theme for print
+    }
+  });
+  window.addEventListener('afterprint', () => {
+    update();
+  });
 }
 
 function setMode(mode) {
   activeSetup = mode;
-  document.getElementById('btnSetup1').className = "setup-btn" + (mode === 1 ? " active" : "");
-  document.getElementById('btnSetup2').className = "setup-btn" + (mode === 2 ? " active" : "");
-  document.getElementById('btnSetup3').className = "setup-btn" + (mode === 3 ? " active" : "");
+  const btn1 = document.getElementById('btnSetup1');
+  const btn2 = document.getElementById('btnSetup2');
+  const btn3 = document.getElementById('btnSetup3');
+
+  btn1.className = "setup-btn" + (mode === 1 ? " active" : "");
+  btn2.className = "setup-btn" + (mode === 2 ? " active" : "");
+  btn3.className = "setup-btn" + (mode === 3 ? " active" : "");
+
+  btn1.setAttribute("aria-selected", mode === 1 ? "true" : "false");
+  btn2.setAttribute("aria-selected", mode === 2 ? "true" : "false");
+  btn3.setAttribute("aria-selected", mode === 3 ? "true" : "false");
 
   if (mode === 1) {
     dom.lblSetupSummary.innerText = "Mode 1: 2-Skates Only (Baseline)";
@@ -209,6 +235,28 @@ function setMode(mode) {
     dom.panelFollower.style.pointerEvents = "auto";
   }
   update();
+}
+
+function renderCanvases(inputs, res, isDark) {
+  drawFrontElevation(dom.frontCanvas, {
+    D: res.wheelDia,
+    numWheels: res.governingIsPowered ? 4 : inputs.nFollowerWheels,
+    F_skate: res.peakSkateLoad_kN,
+    F_wheel: res.wheelLoad_kN,
+    hSlab: inputs.hSlab,
+    plateOn: inputs.plateEnabled,
+    B: inputs.B_plate,
+    t: inputs.t_plate,
+    isRigid: res.isRigid,
+    isCurling: res.isCurling,
+    t_req: res.t_req,
+    Beff: res.Beff,
+    bottomSpread: res.bottomSpread_mm,
+    plateMat: res.plateMat,
+    mRiser: inputs.mRiser
+  }, isDark);
+
+  drawTopPlan(dom.topCanvas, activeSetup, res.nominalSkateLoad_kN, res.peakSkateLoad_kN, inputs.plateEnabled, inputs.B_plate, inputs.L_plate, isDark);
 }
 
 // Main Orchestrator
@@ -253,6 +301,8 @@ function update() {
 
   // Run Calculations
   const res = runPhysicsCalculations(inputs);
+  cachedInputs = inputs;
+  cachedResults = res;
 
   // Update Section 2 Summary
   dom.lblTotalGrossMass.innerText = `${res.grossMass.toLocaleString('en-US', {maximumFractionDigits:0})} kg`;
@@ -372,28 +422,9 @@ function update() {
     dom.cardRigidity.className = "dash-card card-fail";
   }
 
- // Render Visuals with current theme awareness
+  // Render Visuals with current theme awareness
   renderLoadTree(dom.treeBranchWrap, activeSetup, res.grossMass, res.grossWeight_kN, res.activeFollowerWheels, inputs.nFollowerWheels);
-
-  drawFrontElevation(dom.frontCanvas, {
-    D: res.wheelDia,
-    numWheels: res.governingIsPowered ? 4 : inputs.nFollowerWheels,
-    F_skate: res.peakSkateLoad_kN,
-    F_wheel: res.wheelLoad_kN,
-    hSlab: inputs.hSlab,
-    plateOn: inputs.plateEnabled,
-    B: inputs.B_plate,
-    t: inputs.t_plate,
-    isRigid: res.isRigid,
-    isCurling: res.isCurling,
-    t_req: res.t_req,
-    Beff: res.Beff,
-    bottomSpread: res.bottomSpread_mm,
-    plateMat: res.plateMat,
-    mRiser: inputs.mRiser
-  }, isDark);
-
-  drawTopPlan(dom.topCanvas, activeSetup, res.nominalSkateLoad_kN, res.peakSkateLoad_kN, inputs.plateEnabled, inputs.B_plate, inputs.L_plate, isDark);
+  renderCanvases(inputs, res, isDark);
 }
 
 // Initial Boot

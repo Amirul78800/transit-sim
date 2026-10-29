@@ -10,20 +10,20 @@
   <meta name="description" content="Civil & structural transit verification simulator: 2-skate baseline, 6-point perimeter rig, and Diamond 4-point rig with live spreader plate rigidity and slab shear dispersion.">
   <meta name="theme-color" content="#0b1120">
 
- <!-- Open Graph & Social Preview Cards -->
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://loadskatesim.amirulazhj.tech/">
-<meta property="og:title" content="Unified Machinery Transit & Slab Shear Simulator">
-<meta property="og:description" content="Compare 2-skate, 6-point, and Diamond 4-point rigs against slab limits with live spreader plate curling and punching shear analysis.">
-<meta property="og:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+  <!-- Open Graph & Social Preview Cards -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://loadskatesim.amirulazhj.tech/">
+  <meta property="og:title" content="Unified Machinery Transit & Slab Shear Simulator">
+  <meta property="og:description" content="Compare 2-skate, 6-point, and Diamond 4-point rigs against slab limits with live spreader plate curling and punching shear analysis.">
+  <meta property="og:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
 
-<!-- Twitter Card -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Unified Machinery Transit & Slab Shear Simulator">
-<meta name="twitter:description" content="Compare 2-skate, 6-point, and Diamond 4-point rigs against slab limits with live spreader plate curling analysis.">
-<meta name="twitter:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Unified Machinery Transit & Slab Shear Simulator">
+  <meta name="twitter:description" content="Compare 2-skate, 6-point, and Diamond 4-point rigs against slab limits with live spreader plate curling analysis.">
+  <meta name="twitter:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
 
   <!-- Favicon Fallback for Link Previews -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='.9em' font-size='70' x='15'>⚙️</text></svg>">
@@ -32,23 +32,23 @@
 </head>
 <body>
 
-<div class="header">
+<header class="header">
   <div>
     <h1>Unified Machinery Transit & Slab Shear Simulator</h1>
     <p>Transit Configurations: 2-Powered Skates, 6-Point Perimeter Rig, and Diamond 4-Point Rig</p>
   </div>
   <div class="header-actions">
     <!-- THEME TOGGLE BUTTON -->
-    <button id="btnThemeToggle" class="btn-theme-toggle" type="button" title="Toggle Light / Dark Mode">
+    <button id="btnThemeToggle" class="btn-theme-toggle" type="button" aria-label="Toggle Light / Dark Mode" title="Toggle Light / Dark Mode">
       ☀️ Light Mode
     </button>
-    <button onclick="window.print()" class="btn-action">🖨️ Export PDF</button>
+    <button onclick="window.print()" class="btn-action" aria-label="Export calculation report as PDF">🖨️ Export PDF</button>
   </div>
-</div>
+</header>
 
-<div class="app-container">
+<main class="app-container">
   <!-- LEFT: CONTROLS -->
-  <div class="controls-col">
+  <section class="controls-col" aria-label="Simulation Controls">
     
     <!-- 1. RIG CONFIGURATION SELECTOR -->
     <div class="panel">
@@ -56,12 +56,12 @@
         <span>1. Active Rigging Setup</span>
         <span style="font-size:10px; color:#38bdf8;" id="lblSetupSummary">Mode 2: 6-Point Perimeter</span>
       </div>
-      <div class="setup-toggle">
-        <button class="setup-btn" id="btnSetup1">1. 2-Skates Only</button>
-        <button class="setup-btn active" id="btnSetup2">2. 6-Point Rig</button>
-        <button class="setup-btn" id="btnSetup3">3. Diamond 4-Pt</button>
+      <div class="setup-toggle" role="tablist" aria-label="Rigging Configuration Selection">
+        <button class="setup-btn" id="btnSetup1" role="tab" aria-selected="false">1. 2-Skates Only</button>
+        <button class="setup-btn active" id="btnSetup2" role="tab" aria-selected="true">2. 6-Point Rig</button>
+        <button class="setup-btn" id="btnSetup3" role="tab" aria-selected="false">3. Diamond 4-Pt</button>
       </div>
-      <div class="sub-box" id="setupDesc">
+      <div class="sub-box" id="setupDesc" role="status">
         <strong>6-Point Perimeter Rig:</strong> 2 center-edge powered drive units (P1, P2) at the 2.20 m ends + 4 corner follower skids. Symmetrical load division with 3-point floor rocking simulation.
       </div>
     </div>
@@ -70,20 +70,20 @@
     <div class="panel">
       <div class="panel-title"><span>2. System Weight Breakdown</span></div>
       <div class="form-group">
-        <div class="label-wrap"><span>PNM Equipment Payload</span><span class="val" id="lblPnmMass">6,000 kg</span></div>
-        <input type="range" id="inputPnmMass" min="3000" max="10000" step="250" value="6000">
+        <div class="label-wrap"><label for="inputPnmMass">PNM Equipment Payload</label><span class="val" id="lblPnmMass">6,000 kg</span></div>
+        <input type="range" id="inputPnmMass" min="3000" max="10000" step="250" value="6000" aria-label="PNM Equipment Payload in kg">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><span>Shipping Skid Platform</span><span class="val" id="lblSkidMass">1,500 kg</span></div>
-        <input type="range" id="inputSkidMass" min="500" max="3000" step="100" value="1500">
+        <div class="label-wrap"><label for="inputSkidMass">Shipping Skid Platform</label><span class="val" id="lblSkidMass">1,500 kg</span></div>
+        <input type="range" id="inputSkidMass" min="500" max="3000" step="100" value="1500" aria-label="Shipping Skid Platform mass in kg">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><span>2x TS-10T Powered Skates Tare</span><span class="val" id="lblPoweredTare">440 kg</span></div>
-        <input type="range" id="inputPoweredTare" min="200" max="800" step="20" value="440">
+        <div class="label-wrap"><label for="inputPoweredTare">2x TS-10T Powered Skates Tare</label><span class="val" id="lblPoweredTare">440 kg</span></div>
+        <input type="range" id="inputPoweredTare" min="200" max="800" step="20" value="440" aria-label="2x TS-10T Powered Skates Tare in kg">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><span>Mounting Risers & Auxiliary Rigging</span><span class="val" id="lblRiserMass">180 kg</span></div>
-        <input type="range" id="inputRiserMass" min="0" max="500" step="10" value="180">
+        <div class="label-wrap"><label for="inputRiserMass">Mounting Risers & Auxiliary Rigging</label><span class="val" id="lblRiserMass">180 kg</span></div>
+        <input type="range" id="inputRiserMass" min="0" max="500" step="10" value="180" aria-label="Mounting Risers and Auxiliary Rigging mass in kg">
       </div>
 
       <div class="sub-box sub-box-highlight">
@@ -106,8 +106,8 @@
     <div class="panel" id="panelFollower">
       <div class="panel-title"><span>3. Follower Skate Specifications</span></div>
       <div class="form-group">
-        <label class="label-wrap"><span>Catalog Quick Selection</span></label>
-        <div class="btn-group" id="btnGroupModels" style="flex-wrap: wrap;">
+        <span class="label-wrap">Catalog Quick Selection</span>
+        <div class="btn-group" id="btnGroupModels" style="flex-wrap: wrap;" role="group" aria-label="Skate catalog model selection">
           <button class="btn-preset active" data-model="GST-8">GST-8 (6w)</button>
           <button class="btn-preset" data-model="GST-12">GST-12 (8w)</button>
           <button class="btn-preset" data-model="SRS-6">SRS-6 (4w 360°)</button>
@@ -117,20 +117,20 @@
       </div>
 
       <div class="form-group">
-        <div class="label-wrap"><span>Follower Wheels per Skate (nw)</span><span class="val" id="lblFollowerWheels">6 wheels</span></div>
-        <input type="range" id="inputFollowerWheels" min="2" max="16" step="2" value="6">
+        <div class="label-wrap"><label for="inputFollowerWheels">Follower Wheels per Skate (nw)</label><span class="val" id="lblFollowerWheels">6 wheels</span></div>
+        <input type="range" id="inputFollowerWheels" min="2" max="16" step="2" value="6" aria-label="Follower Wheels per Skate">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><span>Wheel Diameter (D)</span><span class="val" id="lblFollowerDia">80 mm</span></div>
-        <input type="range" id="inputFollowerDia" min="60" max="140" step="5" value="80">
+        <div class="label-wrap"><label for="inputFollowerDia">Wheel Diameter (D)</label><span class="val" id="lblFollowerDia">80 mm</span></div>
+        <input type="range" id="inputFollowerDia" min="60" max="140" step="5" value="80" aria-label="Wheel Diameter in mm">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><span>Wheel Width (w)</span><span class="val" id="lblFollowerWidth">70 mm</span></div>
-        <input type="range" id="inputFollowerWidth" min="40" max="110" step="5" value="70">
+        <div class="label-wrap"><label for="inputFollowerWidth">Wheel Width (w)</label><span class="val" id="lblFollowerWidth">70 mm</span></div>
+        <input type="range" id="inputFollowerWidth" min="40" max="110" step="5" value="70" aria-label="Wheel Width in mm">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><span>Wheel Material</span></div>
-        <select id="selectFollowerMat">
+        <label class="label-wrap" for="selectFollowerMat">Wheel Material</label>
+        <select id="selectFollowerMat" aria-label="Wheel Material Selection">
           <option value="pu" selected>Polyurethane 95 Shore A (Elastomeric flat)</option>
           <option value="nylon">Polyamide / Nylon PA6 (Semi-rigid contact)</option>
           <option value="steel">Cast Steel / Iron (Rigid contact)</option>
@@ -143,39 +143,39 @@
       <div class="panel-title">
         <span>4. Spreader Plate / Runway Condition</span>
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; text-transform:none; font-size:11px;">
-          <input type="checkbox" id="checkPlateEnable" style="accent-color:var(--accent); cursor:pointer;">
-          <strong style="color:#ffffff;">Enable Plates</strong>
+          <input type="checkbox" id="checkPlateEnable" style="accent-color:var(--accent); cursor:pointer;" aria-label="Enable Spreader Plates Runway">
+          <strong style="color:var(--text-primary);">Enable Plates</strong>
         </label>
       </div>
 
       <div id="plateControls" style="display:none;">
         <div class="form-group"> 
-        <div class="label-wrap"><span>Plate Material (10 Engineering Grades)</span></div>
-        <select id="selectPlateSteel">
-          <optgroup label="Structural & High-Strength Steels">
-            <option value="ss400" selected>SS400 / S275JR (fy = 275 MPa)</option>
-            <option value="s355">S355J2 / A572-50 (fy = 355 MPa)</option>
-            <option value="strenx700">Strenx 700 (fy = 700 MPa)</option>
-            <option value="hardox450">Hardox 450 (fy = 1,200 MPa)</option>
-          </optgroup>
-          <optgroup label="Lightweight Structural Metals">
-            <option value="al6061">Aluminum 6061-T6 (fy = 276 MPa)</option>
-            <option value="al7075">Aluminum 7075-T6 (fy = 505 MPa)</option>
-          </optgroup>
-          <optgroup label="Advanced Composites & Cleanroom">
-            <option value="cfrp">Carbon Fiber CFRP (fy = 600 MPa)</option>
-            <option value="g10">G10 / FR-4 Epoxy Glass (fy = 340 MPa)</option>
-          </optgroup>
-          <optgroup label="Floor-Safe Polymers & Timber">
-            <option value="uhmwpe">UHMWPE Mat Polymer (fy = 25 MPa)</option>
-            <option value="plywood">Phenolic Birch Plywood (fy = 35 MPa)</option>
-          </optgroup>
-        </select>
-      </div>
+          <label class="label-wrap" for="selectPlateSteel">Plate Material (10 Engineering Grades)</label>
+          <select id="selectPlateSteel" aria-label="Spreader Plate Material Grade">
+            <optgroup label="Structural & High-Strength Steels">
+              <option value="ss400" selected>SS400 / S275JR (fy = 275 MPa)</option>
+              <option value="s355">S355J2 / A572-50 (fy = 355 MPa)</option>
+              <option value="strenx700">Strenx 700 (fy = 700 MPa)</option>
+              <option value="hardox450">Hardox 450 (fy = 1,200 MPa)</option>
+            </optgroup>
+            <optgroup label="Lightweight Structural Metals">
+              <option value="al6061">Aluminum 6061-T6 (fy = 276 MPa)</option>
+              <option value="al7075">Aluminum 7075-T6 (fy = 505 MPa)</option>
+            </optgroup>
+            <optgroup label="Advanced Composites & Cleanroom">
+              <option value="cfrp">Carbon Fiber CFRP (fy = 600 MPa)</option>
+              <option value="g10">G10 / FR-4 Epoxy Glass (fy = 340 MPa)</option>
+            </optgroup>
+            <optgroup label="Floor-Safe Polymers & Timber">
+              <option value="uhmwpe">UHMWPE Mat Polymer (fy = 25 MPa)</option>
+              <option value="plywood">Phenolic Birch Plywood (fy = 35 MPa)</option>
+            </optgroup>
+          </select>
+        </div>
 
         <div class="form-group">
-          <label class="label-wrap"><span>Runway Track Format Presets</span></label>
-          <div class="btn-group" id="btnGroupPlates" style="flex-wrap: wrap;">
+          <span class="label-wrap">Runway Track Format Presets</span>
+          <div class="btn-group" id="btnGroupPlates" style="flex-wrap: wrap;" role="group" aria-label="Runway Sheet Format Presets">
             <button class="btn-preset" data-w="300" data-l="300">Min Pad (300×300)</button>
             <button class="btn-preset active" data-w="610" data-l="2440">2×8 ft Runner</button>
             <button class="btn-preset" data-w="1220" data-l="2440">4×8 ft Sheet</button>
@@ -184,16 +184,16 @@
         </div>
 
         <div class="form-group">
-          <div class="label-wrap"><span>Runway Sheet Width (W)</span><span class="val" id="lblPlateWidth">610 mm</span></div>
-          <input type="range" id="inputPlateWidth" min="250" max="1500" step="25" value="610">
+          <div class="label-wrap"><label for="inputPlateWidth">Runway Sheet Width (W)</label><span class="val" id="lblPlateWidth">610 mm</span></div>
+          <input type="range" id="inputPlateWidth" min="250" max="1500" step="25" value="610" aria-label="Runway Sheet Width in mm">
         </div>
         <div class="form-group">
-          <div class="label-wrap"><span>Runway Sheet Length (L)</span><span class="val" id="lblPlateLength">2,440 mm</span></div>
-          <input type="range" id="inputPlateLength" min="300" max="3000" step="50" value="2440">
+          <div class="label-wrap"><label for="inputPlateLength">Runway Sheet Length (L)</label><span class="val" id="lblPlateLength">2,440 mm</span></div>
+          <input type="range" id="inputPlateLength" min="300" max="3000" step="50" value="2440" aria-label="Runway Sheet Length in mm">
         </div>
         <div class="form-group">
-          <div class="label-wrap"><span>Plate Thickness (t)</span><span class="val" id="lblPlateThick">16 mm</span></div>
-          <input type="range" id="inputPlateThick" min="2" max="60" step="1" value="16">
+          <div class="label-wrap"><label for="inputPlateThick">Plate Thickness (t)</label><span class="val" id="lblPlateThick">16 mm</span></div>
+          <input type="range" id="inputPlateThick" min="2" max="60" step="1" value="16" aria-label="Plate Thickness in mm">
         </div>
 
         <div class="sub-box sub-box-highlight">
@@ -214,7 +214,7 @@
           </div>
         </div>
       </div>
-      <div id="plateDisabledMsg" style="font-size:11px; color:#94a3b8; padding:4px 0;">
+      <div id="plateDisabledMsg" style="font-size:11px; color:var(--text-secondary); padding:4px 0;">
         Bare skate wheels roll directly on the floor. Enable plates to simulate load spreading and runway handling ergonomics.
       </div>
     </div>
@@ -223,35 +223,35 @@
     <div class="panel">
       <div class="panel-title"><span>5. Concrete Slab & Coating Limits</span></div>
       <div class="form-group">
-        <label class="label-wrap"><span>Allowable Surface Pressure (P_allow)</span><span class="val" id="lblFloorStress">10.0 MPa</span></label>
-        <div class="btn-group" id="btnGroupStress" style="flex-wrap: wrap;">
+        <label class="label-wrap" for="inputFloorStress"><span>Allowable Surface Pressure (P_allow)</span><span class="val" id="lblFloorStress">10.0 MPa</span></label>
+        <div class="btn-group" id="btnGroupStress" style="flex-wrap: wrap;" role="group" aria-label="Surface pressure presets">
           <button class="btn-preset" data-stress="5.0">5 MPa</button>
           <button class="btn-preset active" data-stress="10.0">10 MPa (Epoxy)</button>
           <button class="btn-preset" data-stress="15.0">15 MPa (PU)</button>
           <button class="btn-preset" data-stress="25.0">25 MPa (C25)</button>
         </div>
-        <input type="range" id="inputFloorStress" min="3" max="35" step="0.5" value="10" style="margin-top:6px;">
+        <input type="range" id="inputFloorStress" min="3" max="35" step="0.5" value="10" style="margin-top:6px;" aria-label="Allowable Surface Pressure in MPa">
       </div>
 
       <div class="form-group">
-        <label class="label-wrap"><span>Concrete Slab Depth (h)</span><span class="val" id="lblSlabDepth">150 mm</span></label>
-        <div class="btn-group" id="btnGroupSlab">
+        <label class="label-wrap" for="inputSlabDepth"><span>Concrete Slab Depth (h)</span><span class="val" id="lblSlabDepth">150 mm</span></label>
+        <div class="btn-group" id="btnGroupSlab" role="group" aria-label="Concrete slab depth presets">
           <button class="btn-preset active" data-h="150">150 mm</button>
           <button class="btn-preset" data-h="200">200 mm</button>
           <button class="btn-preset" data-h="250">250 mm</button>
           <button class="btn-preset" data-h="300">300 mm</button>
         </div>
-        <input type="range" id="inputSlabDepth" min="100" max="350" step="10" value="150" style="margin-top:6px;">
+        <input type="range" id="inputSlabDepth" min="100" max="350" step="10" value="150" style="margin-top:6px;" aria-label="Concrete Slab Depth in mm">
       </div>
     </div>
 
-  </div>
+  </section>
 
   <!-- RIGHT: REAL-TIME RESULTS & VISUALIZATIONS -->
-  <div class="visuals-col">
+  <section class="visuals-col" aria-label="Simulation Visualizations and Results">
 
     <!-- 6 METRIC CARDS -->
-    <div class="dashboard-grid">
+    <div class="dashboard-grid" role="region" aria-label="Live Structural Metrics">
       <div class="dash-card" id="cardSkateLoad">
         <div class="meta"><span>1. SKATE POINT LOAD</span><span id="tagSkateMode">Nominal / Peak</span></div>
         <div class="main-val" id="valSkateLoad">13.53 kN</div>
@@ -296,37 +296,37 @@
     </div>
 
     <!-- DYNAMIC LOAD TREE -->
-    <div class="tree-container">
+    <div class="tree-container" role="region" aria-label="Load Transfer Hierarchy">
       <div class="tree-title">
         <span>Load Transfer Breakdown (Static Nominal vs. Dynamic Peak)</span>
-        <span style="color:#94a3b8; font-size:11px;" id="lblTreeModeTag">Mode 2: 6-Point Rig</span>
+        <span style="color:var(--text-secondary); font-size:11px;" id="lblTreeModeTag">Mode 2: 6-Point Rig</span>
       </div>
       <div class="tree-node-root">
-        <span style="font-size:10px; color:#94a3b8; text-transform:uppercase; font-weight:700;">Equipment Package Gross Load</span>
-        <div style="font-size:16px; font-weight:800; color:#38bdf8;" id="treeRootVal">8.12-Ton Gross Total / 79.66 kN</div>
+        <span style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:700;">Equipment Package Gross Load</span>
+        <div style="font-size:16px; font-weight:800; color:var(--accent);" id="treeRootVal">8.12-Ton Gross Total / 79.66 kN</div>
       </div>
       <div class="tree-branches" id="treeBranchWrap"></div>
     </div>
 
     <!-- CANVASES -->
-    <div class="canvas-panel">
+    <div class="canvas-panel" role="region" aria-label="Schematic Engineering Diagrams">
       <div>
-        <div style="font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px; display:flex; justify-content:space-between;">
+        <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between;">
           <span>FRONT ELEVATION: Critical Skate Bogie, Spreader Plate & 45° Slab Dispersion</span>
           <span style="color:var(--accent); font-size:11px;" id="lblFrontElevationSub">Governing Bogie: Corner Follower</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="frontCanvas" width="940" height="360"></canvas>
+          <canvas id="frontCanvas" width="940" height="360" role="img" aria-label="Front elevation cross-section schematic showing bogie wheel axles, spreader plate cantilever behavior, and 45 degree punch shear dispersion through concrete slab"></canvas>
         </div>
       </div>
 
       <div>
-        <div style="font-size:12px; font-weight:700; color:#cbd5e1; margin-bottom:6px; display:flex; justify-content:space-between;">
+        <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between;">
           <span>TOP-DOWN PLAN: 3.80 m × 2.20 m Shipping Skid with Runway Tracks</span>
           <span style="color:var(--accent); font-size:11px;" id="lblTopPlanSub">6 Skates Positioned</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="topCanvas" width="940" height="230"></canvas>
+          <canvas id="topCanvas" width="940" height="230" role="img" aria-label="Top-down plan view schematic of the 3.80 meter by 2.20 meter shipping skid platform with powered and follower skate layout"></canvas>
         </div>
       </div>
     </div>
@@ -343,8 +343,8 @@
       </ul>
     </details>
 
-  </div>
-</div>
+  </section>
+</main>
 
 <!-- ENTRY SCRIPT: NATIVE ES6 MODULE -->
 <script type="module" src="js/main.js"></script>

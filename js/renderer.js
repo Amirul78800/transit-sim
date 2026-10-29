@@ -111,12 +111,24 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
   container.innerHTML = html;
 }
+
 export function drawFrontElevation(canvas, params, isDark = true) {
   const ctx = canvas.getContext('2d');
   const { D, numWheels, F_skate, F_wheel, hSlab, plateOn, B, t, isRigid, isCurling, t_req, Beff, bottomSpread, plateMat, mRiser = 180 } = params;
   
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const cx = canvas.width / 2;
+  // High-DPI / Retina Crisp Scaling
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const logicalW = 940;
+  const logicalH = 360;
+
+  if (canvas.width !== Math.round(logicalW * dpr) || canvas.height !== Math.round(logicalH * dpr)) {
+    canvas.width = Math.round(logicalW * dpr);
+    canvas.height = Math.round(logicalH * dpr);
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, logicalW, logicalH);
+  const cx = logicalW / 2;
   const scale = 0.44;
 
   const slabTopY = 175;
@@ -133,10 +145,10 @@ export function drawFrontElevation(canvas, params, isDark = true) {
 
   // 1. Concrete Slab
   ctx.fillStyle = slabFill;
-  ctx.fillRect(40, slabTopY, canvas.width - 80, slabH_px);
+  ctx.fillRect(40, slabTopY, logicalW - 80, slabH_px);
   ctx.strokeStyle = slabStroke;
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(40, slabTopY, canvas.width - 80, slabH_px);
+  ctx.strokeRect(40, slabTopY, logicalW - 80, slabH_px);
 
   ctx.fillStyle = secondaryText;
   ctx.font = "bold 11px sans-serif";
@@ -178,7 +190,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   // 3. Spreader Plate
   let skateBaseY = slabTopY;
   if (plateOn) {
-    const pW = Math.min(B * scale, canvas.width - 140);
+    const pW = Math.min(B * scale, logicalW - 140);
     const pH = Math.max(8, t * scale);
     const pTopY = slabTopY - pH;
     skateBaseY = pTopY;
@@ -282,9 +294,21 @@ export function drawFrontElevation(canvas, params, isDark = true) {
 
 export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, L, isDark = true) {
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2 - 8;
+
+  // High-DPI / Retina Crisp Scaling
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const logicalW = 940;
+  const logicalH = 230;
+
+  if (canvas.width !== Math.round(logicalW * dpr) || canvas.height !== Math.round(logicalH * dpr)) {
+    canvas.width = Math.round(logicalW * dpr);
+    canvas.height = Math.round(logicalH * dpr);
+  }
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, logicalW, logicalH);
+  const cx = logicalW / 2;
+  const cy = logicalH / 2 - 8;
 
   const skidW_px = 560;
   const skidH_px = 125;
