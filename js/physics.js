@@ -36,11 +36,11 @@ export function runPhysicsCalculations(inputs) {
 
   if (activeSetup === 1) {
     // Mode 1: Dual-Skate Configuration (rev.01 Report)
-    nominalSkateLoad_kN = grossWeight_kN * 0.50; // 38.95 kN
-    peakSkateLoad_kN = grossWeight_kN * 0.60 * 1.20; // 56.08 kN (60% CG bias x 1.20 inertia)
+    nominalSkateLoad_kN = grossWeight_kN * 0.50; // 38.95 kN (50% Nominal)
+    peakSkateLoad_kN = grossWeight_kN * 0.60;    // 46.73 kN (60% Static CG Bias)
     
-    // 3-Point Rocking Peak Wheel: 60% CG bias x 35% rocking x 1.20 inertia = 19.63 kN
-    wheelLoad_kN = grossWeight_kN * 0.60 * 0.35 * 1.20;
+    // 3-Point Rocking Peak Wheel: Biased Skate (46.73 kN) x 35% Rocking x 1.20 Dynamic Inertia
+    wheelLoad_kN = peakSkateLoad_kN * 0.35 * 1.20; // 19.63 kN
     wheelDia = 140;
     wheelWidth = 85;
     governingIsPowered = true;
