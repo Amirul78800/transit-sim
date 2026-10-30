@@ -31,10 +31,14 @@ export function runPhysicsCalculations(inputs) {
   let activeFollowerWheels = nFollowerWheels;
   let governingIsPowered = false;
 
-  if (activeSetup === 1) {
-    nominalSkateLoad_kN = grossWeight_kN / 2;
-    peakSkateLoad_kN = nominalSkateLoad_kN * 1.30;
+ if (activeSetup === 1) {
+    nominalSkateLoad_kN = grossWeight_kN * 0.50; // 38.95 kN
+    peakSkateLoad_kN = grossWeight_kN * 0.60 * 1.20; // 56.08 kN (60% CG bias x 1.20 inertia)
+    wheelLoad_kN = grossWeight_kN * 0.60 * 0.35 * 1.20; // 19.63 kN (35% 3-point rocking)
+    wheelDia = 140;
+    wheelWidth = 85;
     governingIsPowered = true;
+   
   } else if (activeSetup === 2) {
     nominalSkateLoad_kN = grossWeight_kN / 6;
     peakSkateLoad_kN = grossWeight_kN * 0.25 * 1.20;
@@ -92,10 +96,15 @@ export function runPhysicsCalculations(inputs) {
   if (plateEnabled) {
     contactPressure_MPa = (peakSkateLoad_kN * 1000) / (Beff * Beff);
   } else {
-    const mat = MAT_DATA[matKey];
-    const lc = mat.flat_base * Math.sqrt(wheelDia / 80) * Math.pow(wheelLoad_kN / 2.5, 0.35);
-    const wheelContactArea = wheelWidth * lc;
-    contactPressure_MPa = (wheelLoad_kN * 1000) / wheelContactArea;
+    if (governingIsPowered && matKey === 'pu') {
+      // 85 mm roller width x 20 mm flat contact = 1,700 mm² patch (rev.01 Report)
+      contactPressure_MPa = (wheelLoad_kN * 1000) / 1700; // 19.63 kN / 1700 = 11.55 MPa
+    } else {
+      const mat = MAT_DATA[matKey];
+      const lc = mat.flat_base * Math.sqrt(wheelDia / 80) * Math.pow(wheelLoad_kN / 2.5, 0.35);
+      const wheelContactArea = wheelWidth * lc;
+      contactPressure_MPa = (wheelLoad_kN * 1000) / wheelContactArea;
+    }
   }
 
   // 9. Slab Dispersion Base
