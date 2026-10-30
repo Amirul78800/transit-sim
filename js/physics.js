@@ -28,41 +28,43 @@ export function runPhysicsCalculations(inputs) {
   // 5. Load distribution per setup
   let nominalSkateLoad_kN = 0;
   let peakSkateLoad_kN = 0;
+  let wheelLoad_kN = 0;
+  let wheelDia = 0;
+  let wheelWidth = 0;
   let activeFollowerWheels = nFollowerWheels;
   let governingIsPowered = false;
 
   if (activeSetup === 1) {
-    nominalSkateLoad_kN = grossWeight_kN / 2;
-    peakSkateLoad_kN = nominalSkateLoad_kN * 1.30;
+    // Mode 1: Dual-Skate Configuration (rev.01 Report)
+    nominalSkateLoad_kN = grossWeight_kN * 0.50; // 38.95 kN (50% Nominal)
+    peakSkateLoad_kN = grossWeight_kN * 0.60;    // 46.73 kN (60% Static CG Bias)
+    
+    // 3-Point Rocking Peak Wheel: Biased Skate (46.73 kN) x 35% Rocking x 1.20 Dynamic Inertia
+    wheelLoad_kN = peakSkateLoad_kN * 0.35 * 1.20; // 19.63 kN
+    wheelDia = 140;
+    wheelWidth = 85;
     governingIsPowered = true;
   } else if (activeSetup === 2) {
+    // Mode 2: 6-Point Perimeter Rig
     nominalSkateLoad_kN = grossWeight_kN / 6;
     peakSkateLoad_kN = grossWeight_kN * 0.25 * 1.20;
     activeFollowerWheels = Math.max(2, Math.floor(nFollowerWheels * 0.50));
-    governingIsPowered = false;
-  } else if (activeSetup === 3) {
-    nominalSkateLoad_kN = grossWeight_kN / 4;
-    peakSkateLoad_kN = grossWeight_kN * 0.35 * 1.20;
-    activeFollowerWheels = Math.max(2, Math.floor(nFollowerWheels * 0.75));
-    governingIsPowered = false;
-  }
-
-  // 6. Roller loads
-  let wheelLoad_kN = 0;
-  let wheelDia = 0;
-  let wheelWidth = 0;
-
-  if (governingIsPowered) {
-    wheelLoad_kN = peakSkateLoad_kN / 4;
-    wheelDia = 140;
-    wheelWidth = 85;
-  } else {
     wheelLoad_kN = peakSkateLoad_kN / activeFollowerWheels;
     wheelDia = dFollower;
     wheelWidth = wFollower;
+    governingIsPowered = false;
+  } else if (activeSetup === 3) {
+    // Mode 3: Diamond 4-Point Rig
+    nominalSkateLoad_kN = grossWeight_kN / 4;
+    peakSkateLoad_kN = grossWeight_kN * 0.35 * 1.20;
+    activeFollowerWheels = Math.max(2, Math.floor(nFollowerWheels * 0.75));
+    wheelLoad_kN = peakSkateLoad_kN / activeFollowerWheels;
+    wheelDia = dFollower;
+    wheelWidth = wFollower;
+    governingIsPowered = false;
   }
 
-  // 7. AISC Cantilever Spreader Plate Mechanics
+  // 6. AISC Cantilever Spreader Plate Mechanics
   const B_code_min = 2 * hSlab;
   const bogieWidth = governingIsPowered ? 240 : 200;
   const structuralB = Math.max(B_code_min, Math.min(B_plate, B_code_min * 1.5));
@@ -87,18 +89,23 @@ export function runPhysicsCalculations(inputs) {
     Beff = bogieWidth + (2 * cantilever_c * Math.pow(stiffnessRatio, 1.5));
   }
 
-  // 8. Contact Stress
+  // 7. Contact Stress
   let contactPressure_MPa = 0;
   if (plateEnabled) {
     contactPressure_MPa = (peakSkateLoad_kN * 1000) / (Beff * Beff);
   } else {
-    const mat = MAT_DATA[matKey];
-    const lc = mat.flat_base * Math.sqrt(wheelDia / 80) * Math.pow(wheelLoad_kN / 2.5, 0.35);
-    const wheelContactArea = wheelWidth * lc;
-    contactPressure_MPa = (wheelLoad_kN * 1000) / wheelContactArea;
+    if (governingIsPowered && matKey === 'pu') {
+      // 85 mm roller width x 20 mm flat contact = 1,700 mm² patch (rev.01 Report)
+      contactPressure_MPa = (wheelLoad_kN * 1000) / 1700; // 19.63 kN / 1,700 mm² = 11.55 MPa
+    } else {
+      const mat = MAT_DATA[matKey];
+      const lc = mat.flat_base * Math.sqrt(wheelDia / 80) * Math.pow(wheelLoad_kN / 2.5, 0.35);
+      const wheelContactArea = wheelWidth * lc;
+      contactPressure_MPa = (wheelLoad_kN * 1000) / wheelContactArea;
+    }
   }
 
-  // 9. Slab Dispersion Base
+  // 8. Slab Dispersion Base
   const bottomSpread_mm = Beff + 2 * hSlab;
   const isSpreadOK = plateEnabled && isRigid && (B_plate >= B_code_min);
 

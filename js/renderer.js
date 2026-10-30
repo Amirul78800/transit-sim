@@ -5,19 +5,18 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
   let html = '';
 
-  if (activeSetup === 1) {
-    // MODE 1: 2-SKATES ONLY (50% each)
-    const skateTon = (grossTon / 2).toFixed(2);
-    const skateStatic_kN = (grossWeight / 2).toFixed(1);
-    const skateDyn_kN = (skateStatic_kN * 1.30).toFixed(1);
-    const rollerStatic_kN = (skateStatic_kN / 4).toFixed(1);
-    const rollerDyn_kN = (skateDyn_kN / 4).toFixed(1);
+if (activeSetup === 1) {
+    // Mode 1: Dual-Skate Configuration (rev.01 Report)
+    const skateStatic_kN = (grossWeight * 0.50).toFixed(1);          // 38.9 kN
+    const skateBiased_kN = (grossWeight * 0.60).toFixed(1);          // 46.7 kN (rev.01 Section 2.2)
+    const rollerStatic_kN = (skateStatic_kN / 4).toFixed(1);         // 9.7 kN
+    const rollerDyn_kN = (grossWeight * 0.60 * 0.35 * 1.20).toFixed(1); // 19.6 kN
 
     html = `
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Front Skate: 50% ]</span>
+        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Front Skate: 50% Nominal / 60% Bias ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Nominal: ${skateStatic_kN} kN | Peak Operational: ${skateDyn_kN} kN
+          Nominal: ${skateStatic_kN} kN | Biased Peak: ${skateBiased_kN} kN
         </div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">NOMINAL STATIC<strong>${rollerStatic_kN} kN / roller</strong></div>
@@ -25,9 +24,9 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
         </div>
       </div>
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Rear Skate: 50% ]</span>
+        <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Rear Skate: 50% Nominal / 60% Bias ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Nominal: ${skateStatic_kN} kN | Peak Operational: ${skateDyn_kN} kN
+          Nominal: ${skateStatic_kN} kN | Biased Peak: ${skateBiased_kN} kN
         </div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">NOMINAL STATIC<strong>${rollerStatic_kN} kN / roller</strong></div>
@@ -289,7 +288,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   ctx.stroke();
 
   ctx.font = "bold 13px sans-serif";
-  ctx.fillText(`Peak Operational F_skate = ${F_skate.toFixed(2)} kN (${numWheels}w @ ${F_wheel.toFixed(2)} kN/w)`, cx, arrowTopY - 8);
+  ctx.fillText(`Biased Skate F_skate = ${F_skate.toFixed(2)} kN (Peak Rocking Wheel: ${F_wheel.toFixed(2)} kN)`, cx, arrowTopY - 8);
 }
 
 export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, L, isDark = true) {
