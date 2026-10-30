@@ -288,7 +288,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   ctx.stroke();
 
   ctx.font = "bold 13px sans-serif";
-  ctx.fillText(`Peak Operational F_skate = ${F_skate.toFixed(2)} kN (${numWheels}w @ ${F_wheel.toFixed(2)} kN/w)`, cx, arrowTopY - 8);
+  ctx.fillText(`Biased Skate F_skate = ${F_skate.toFixed(2)} kN (Peak Rocking Wheel: ${F_wheel.toFixed(2)} kN)`, cx, arrowTopY - 8);
 }
 
 export function drawTopPlan(canvas, activeSetup, nomLoad, peakLoad, plateOn, B, L, isDark = true) {
