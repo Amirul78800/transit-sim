@@ -5,9 +5,10 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
 
   let html = '';
 
-  if (activeSetup === 1) {
+if (activeSetup === 1) {
+    // Mode 1: Dual-Skate Configuration (rev.01 Report)
     const skateStatic_kN = (grossWeight * 0.50).toFixed(1);          // 38.9 kN
-    const skateDyn_kN = (grossWeight * 0.60 * 1.20).toFixed(1);      // 56.1 kN
+    const skateBiased_kN = (grossWeight * 0.60).toFixed(1);          // 46.7 kN (rev.01 Section 2.2)
     const rollerStatic_kN = (skateStatic_kN / 4).toFixed(1);         // 9.7 kN
     const rollerDyn_kN = (grossWeight * 0.60 * 0.35 * 1.20).toFixed(1); // 19.6 kN
 
@@ -15,7 +16,7 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Front Skate: 50% Nominal / 60% Bias ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Nominal: ${skateStatic_kN} kN | Peak Operational: ${skateDyn_kN} kN
+          Nominal: ${skateStatic_kN} kN | Biased Peak: ${skateBiased_kN} kN
         </div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">NOMINAL STATIC<strong>${rollerStatic_kN} kN / roller</strong></div>
@@ -25,7 +26,7 @@ export function renderLoadTree(container, activeSetup, grossMass, grossWeight, a
       <div class="tree-branch-col">
         <span style="font-size:10px; color:var(--accent); font-weight:700;">[ Rear Skate: 50% Nominal / 60% Bias ]</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
-          Nominal: ${skateStatic_kN} kN | Peak Operational: ${skateDyn_kN} kN
+          Nominal: ${skateStatic_kN} kN | Biased Peak: ${skateBiased_kN} kN
         </div>
         <div class="tree-leaf-grid">
           <div class="tree-leaf">NOMINAL STATIC<strong>${rollerStatic_kN} kN / roller</strong></div>
