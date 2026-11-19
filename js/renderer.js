@@ -103,7 +103,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   ctx.font = 'bold 11px sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText(
-    hSlab ? `Slab h = ${hSlab.toFixed(0)} mm (d = ${visualD.toFixed(0)} mm)` : 'Slab h = Pending CE Input',
+    hSlab ? `Slab h = ${hSlab.toFixed(0)} mm (d = ${visualD.toFixed(0)} mm)` : 'Slab h = Pending input',
     55,
     slabTopY + slabH_px / 2 + 4
   );
@@ -116,15 +116,12 @@ export function drawFrontElevation(canvas, params, isDark = true) {
 
   let coneFill = 'rgba(56, 189, 248, 0.14)';
   let coneStroke = '#0284c7';
-  if (isCurling || isPlateUndersized) {
+  if (isCurling || isPlateUndersized || punchPass === false) {
     coneFill = 'rgba(239, 68, 68, 0.15)';
     coneStroke = '#dc2626';
-  } else if (punchPass === true || isSpreadOK === true) {
+  } else if (punchPass === true || (punchPass === null && isSpreadOK === true)) {
     coneFill = 'rgba(34, 197, 94, 0.15)';
     coneStroke = '#16a34a';
-  } else if (punchPass === false) {
-    coneFill = 'rgba(239, 68, 68, 0.15)';
-    coneStroke = '#dc2626';
   }
 
   ctx.save();
@@ -171,15 +168,26 @@ export function drawFrontElevation(canvas, params, isDark = true) {
       ctx.strokeStyle = isDark ? '#c084fc' : '#7e22ce';
       ctx.lineWidth = 2;
       ctx.strokeRect(cx - pW / 2, pTopY, pW, pH);
-      ctx.fillStyle = '#ffffff';
+      const plateLabel = `${B} mm ${plateMat.name.split('(')[0].trim()} (t = ${t} mm)`;
       ctx.font = 'bold 10px sans-serif';
-      ctx.fillText(`${B} mm ${plateMat.name.split('(')[0].trim()} (t = ${t} mm)`, cx, pTopY + pH / 2 + 3.5);
+      const labelW = ctx.measureText(plateLabel).width;
+      if (labelW + 12 <= pW) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(plateLabel, cx, pTopY + pH / 2 + 3.5);
+      } else {
+        ctx.fillStyle = isDark ? '#e9d5ff' : '#6b21a8';
+        ctx.textAlign = 'left';
+        ctx.fillText(plateLabel, cx + pW / 2 + 8, pTopY + pH / 2 + 3.5);
+        ctx.textAlign = 'center';
+      }
     } else if (isPlateUndersized) {
       ctx.fillStyle = '#dc2626';
       ctx.fillRect(cx - pW / 2, pTopY, pW, pH);
-      ctx.fillStyle = '#fca5a5';
+      ctx.fillStyle = '#ef4444';
       ctx.font = 'bold 10px sans-serif';
-      ctx.fillText('UNDERSIZED PLATE (< SKATE)', cx, pTopY - 6);
+      ctx.textAlign = 'left';
+      ctx.fillText('UNDERSIZED PLATE (< SKATE)', cx + pW / 2 + 8, pTopY + pH / 2 + 3.5);
+      ctx.textAlign = 'center';
     } else {
       const lift = Math.min(20, 14 * ((t_req - t) / Math.max(1, t_req)));
       ctx.save();
@@ -195,9 +203,11 @@ export function drawFrontElevation(canvas, params, isDark = true) {
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.restore();
-      ctx.fillStyle = '#dc2626';
+      ctx.fillStyle = '#ef4444';
       ctx.font = 'bold 10px sans-serif';
-      ctx.fillText('EDGE CURLING', cx, slabTopY - lift - 6);
+      ctx.textAlign = 'left';
+      ctx.fillText('EDGE CURLING', cx + pW / 2 + 8, slabTopY - lift + 3);
+      ctx.textAlign = 'center';
     }
   }
 
@@ -329,15 +339,15 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
     skates.push({ id: 'C3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
     skates.push({ id: 'C4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
   } else if (activeSetup === 4) {
-    // 8-Point
-    skates.push({ id: 'P1', x: cx, y: skidY + edgePadY, isPowered: true });
-    skates.push({ id: 'P2', x: cx, y: skidY + skidH_px - edgePadY, isPowered: true });
+    // 8-Point (P1/P2 at short-edge centers consistent with all setups; 6 followers at corners + mid-rails)
+    skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
+    skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
     skates.push({ id: 'S1', x: skidX + edgePadX, y: skidY + edgePadY, isPowered: false });
     skates.push({ id: 'S2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
+    skates.push({ id: 'M1', x: cx, y: skidY + edgePadY, isPowered: false });
+    skates.push({ id: 'M2', x: cx, y: skidY + skidH_px - edgePadY, isPowered: false });
     skates.push({ id: 'S3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
     skates.push({ id: 'S4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
-    skates.push({ id: 'E1', x: skidX + edgePadX, y: cy, isPowered: false });
-    skates.push({ id: 'E2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: false });
   } else {
     // 10-Point
     skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
@@ -358,8 +368,9 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
 
     const trackH_px = Math.max(24, Math.min(46, (B / (platWidth * 1000)) * skidH_px));
     const trackW_px = skidW_px + 36;
+    const isRunwaySheet = activeSetup >= 3 && L >= 1500;
 
-    if (activeSetup >= 3) {
+    if (isRunwaySheet) {
       ctx.fillRect(skidX - 18, (skidY + edgePadY) - trackH_px / 2, trackW_px, trackH_px);
       ctx.strokeRect(skidX - 18, (skidY + edgePadY) - trackH_px / 2, trackW_px, trackH_px);
       ctx.fillRect(skidX - 18, (skidY + skidH_px - edgePadY) - trackH_px / 2, trackW_px, trackH_px);
@@ -371,7 +382,7 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
         ctx.strokeRect(s.x - padW / 2, cy - trackH_px / 2, padW, trackH_px);
       });
     } else {
-      const padW = Math.max(46, Math.min(85, (L / (platLength * 1000)) * 120));
+      const padW = Math.max(38, Math.min(110, (L / (platLength * 1000)) * skidW_px));
       skates.forEach((sk) => {
         ctx.fillRect(sk.x - padW / 2, sk.y - trackH_px / 2, padW, trackH_px);
         ctx.strokeRect(sk.x - padW / 2, sk.y - trackH_px / 2, padW, trackH_px);

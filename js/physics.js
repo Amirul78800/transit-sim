@@ -1,7 +1,7 @@
 import {
   G, CONFIRMED_UDL_KPA, MAT_DATA, PLATE_MAT_DATA,
   POWERED_MODELS, CATALOG_MODELS, CONCRETE_GRADES
-} from './data.js?v=6';
+} from './data.js?v=9';
 
 const isPosNum = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
@@ -175,16 +175,15 @@ function buildSkateCoords(activeSetup, platL, platW, poweredChassisW, followerCh
     coords.push({ x: platL - 0.30, y: 0.25, b: followerChassisW / 1000 });
     coords.push({ x: platL - 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
   } else if (activeSetup === 4) {
-    // 8-Point
-    const railYOffset = Math.max(0.25, poweredChassisW / 2000);
-    coords.push({ x: platL / 2, y: railYOffset, b: poweredChassisW / 1000 });
-    coords.push({ x: platL / 2, y: platW - railYOffset, b: poweredChassisW / 1000 });
+    // 8-Point (P1/P2 at short-edge centers, 6 followers at 4 corners + 2 long-rail midpoints)
+    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
     coords.push({ x: 0.30, y: 0.25, b: followerChassisW / 1000 });
     coords.push({ x: 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL / 2, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL / 2, y: platW - 0.25, b: followerChassisW / 1000 });
     coords.push({ x: platL - 0.30, y: 0.25, b: followerChassisW / 1000 });
     coords.push({ x: platL - 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: 0.30, y: platW / 2, b: followerChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW / 2, b: followerChassisW / 1000 });
   } else {
     // 10-Point
     coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
@@ -210,8 +209,8 @@ export function runPhysicsCalculations(inputs) {
     activeSetup
   } = inputs;
 
-  const safePlatL = isPosNum(platL) ? platL : 3.80;
-  const safePlatW = isPosNum(platW) ? platW : 2.40;
+  const safePlatL = isPosNum(platL) ? Math.max(0.90, platL) : 3.80;
+  const safePlatW = isPosNum(platW) ? Math.max(0.60, platW) : 2.40;
   const platArea = safePlatL * safePlatW;
   const plat = { length: safePlatL, width: safePlatW, area: platArea, label: `${safePlatL.toFixed(2)} × ${safePlatW.toFixed(2)} m (${platArea.toFixed(2)} m²)` };
 
@@ -221,7 +220,7 @@ export function runPhysicsCalculations(inputs) {
   const plateMat = PLATE_MAT_DATA[plateMatKey] || PLATE_MAT_DATA.ss400;
 
   const hasHSlab = isPosNum(hSlab);
-  const effectiveDSlab = isPosNum(dSlab) ? dSlab : (hasHSlab ? Math.max(80, hSlab - 30) : null);
+  const effectiveDSlab = isPosNum(dSlab) ? Math.min(hSlab || dSlab, dSlab) : (hasHSlab ? Math.max(20, hSlab - 30) : null);
   const hasRhoL = isPosNum(rhoL);
   const hasSpanL = isPosNum(spanL);
   const hasPAllow = isPosNum(pAllowFloor);

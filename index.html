@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Machinery Transit & Slab Simulator</title>
-  <meta name="description" content="Machinery transit load and suspended slab verification simulator (BS 8110-1 / Eurocode 2).">
+  <title>Floor Loading Assessment — AMR / Skate</title>
+  <meta name="description" content="Floor loading assessment simulator for AMR and heavy-duty machine skates.">
   <meta name="theme-color" content="#0b1120">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='.9em' font-size='70' x='15'>⚙️</text></svg>">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
 <header class="header">
   <div>
-    <h1>Machinery Transit & Slab Simulator</h1>
-    <p>Floor Rating: 7.50 kN/m² | Modes 1–3 Evaluated on Building Spec Inputs</p>
+    <h1>Floor Loading Assessment (AMR / Skate)</h1>
+    <p id="lblHeaderSub">Floor Load Rating: 7.50 kN/m²</p>
   </div>
   <div class="header-actions">
     <button id="btnThemeToggle" class="btn-theme-toggle" type="button" aria-label="Toggle Light / Dark Mode">☀️ Light Mode</button>
@@ -259,7 +259,7 @@
       <div class="form-group">
         <label class="label-wrap" for="selectConcreteGrade">Concrete Grade</label>
         <select id="selectConcreteGrade">
-          <option value="" selected>Pending CE Input</option>
+          <option value="" selected>Pending input</option>
           <option value="C20/25">C20/25 (f_cu = 25 MPa)</option>
           <option value="C25/30">C25/30 (f_cu = 30 MPa)</option>
           <option value="C30/37">C30/37 (f_cu = 37 MPa)</option>
@@ -268,7 +268,7 @@
 
       <div class="form-group">
         <label class="label-wrap" for="inputSlabDepth">Slab Thickness h (mm)</label>
-        <input type="number" id="inputSlabDepth" min="80" max="500" step="5" placeholder="Pending CE input">
+        <input type="number" id="inputSlabDepth" min="80" max="500" step="5" placeholder="Pending input">
         <div class="btn-group" id="btnGroupSlab">
           <button class="btn-preset" data-h="150">150</button>
           <button class="btn-preset" data-h="175">175</button>
@@ -278,13 +278,13 @@
       </div>
 
       <div class="form-group">
-        <label class="label-wrap" for="inputRhoL">Tension Rebar Ratio ρ_l (%)</label>
-        <input type="number" id="inputRhoL" min="0.1" max="3.0" step="0.01" placeholder="Pending CE input">
+        <label class="label-wrap" for="inputRhoL">Rebar Ratio ρ_l (%)</label>
+        <input type="number" id="inputRhoL" min="0.1" max="3.0" step="0.01" placeholder="Pending input">
       </div>
 
       <div class="form-group">
         <label class="label-wrap" for="inputSpanL">Beam / Slab Span L (m)</label>
-        <input type="number" id="inputSpanL" min="1.0" max="15.0" step="0.1" placeholder="Pending CE input">
+        <input type="number" id="inputSpanL" min="1.0" max="15.0" step="0.1" placeholder="Pending input">
         <div class="btn-group" id="btnGroupSpan">
           <button class="btn-preset" data-span="3.0">3.0 m</button>
           <button class="btn-preset" data-span="4.0">4.0 m</button>
@@ -295,7 +295,7 @@
 
       <div class="form-group">
         <label class="label-wrap" for="inputFloorStress">Surface Limit P_allow (MPa)</label>
-        <input type="number" id="inputFloorStress" min="1" max="50" step="0.5" placeholder="Pending CE input">
+        <input type="number" id="inputFloorStress" min="1" max="50" step="0.5" placeholder="Pending input">
         <div class="btn-group" id="btnGroupStress">
           <button class="btn-preset" data-stress="10">10</button>
           <button class="btn-preset" data-stress="12">12</button>
@@ -334,42 +334,42 @@
       </div>
 
       <div class="dash-card" id="cardPressure">
-        <div class="meta"><span>4. MODE 1: SURFACE</span><span>Hertz+Gent</span></div>
+        <div class="meta"><span>4. SURFACE PRESSURE</span><span>Floor Contact</span></div>
         <div class="main-val" id="valPressure">—</div>
         <div class="sub" id="subPressure">—</div>
         <div class="status-badge status-info" id="badgePressure">PENDING</div>
       </div>
 
       <div class="dash-card" id="cardPunch">
-        <div class="meta"><span>5. MODE 2: SHEAR</span><span id="tagPunchCode">BS 8110</span></div>
+        <div class="meta"><span>5. PUNCHING SHEAR</span><span id="tagPunchCode">BS 8110</span></div>
         <div class="main-val" id="valPunch">—</div>
         <div class="sub" id="subPunch">—</div>
         <div class="status-badge status-info" id="badgePunch">PENDING</div>
       </div>
 
       <div class="dash-card" id="cardBending">
-        <div class="meta"><span>6. MODE 3: BENDING</span><span>Method B</span></div>
+        <div class="meta"><span>6. SLAB BENDING</span><span>Span Check</span></div>
         <div class="main-val" id="valBending">—</div>
         <div class="sub" id="subBending">—</div>
         <div class="status-badge status-info" id="badgeBending">PENDING</div>
       </div>
 
       <div class="dash-card" id="cardUdl">
-        <div class="meta"><span>7. FOOTPRINT UDL</span><span id="tagUdlArea">9.12 m²</span></div>
+        <div class="meta"><span>7. FLOOR UDL</span><span id="tagUdlArea">9.12 m²</span></div>
         <div class="main-val" id="valUdl">—</div>
         <div class="sub" id="subUdl">Rating: 7.50 kN/m²</div>
         <div class="status-badge status-info" id="badgeUdl">—</div>
       </div>
 
       <div class="dash-card" id="cardRigidity">
-        <div class="meta"><span>8. SPREADER PLATE</span><span>AISC DG1</span></div>
+        <div class="meta"><span>8. SPREADER PLATE</span><span>Plate Stiffness</span></div>
         <div class="main-val" id="valRigidity">—</div>
         <div class="sub" id="subRigidity">—</div>
         <div class="status-badge status-info" id="badgeRigidity">—</div>
       </div>
 
       <div class="dash-card" id="cardVerdict">
-        <div class="meta"><span>9. EVALUATION</span><span>Rating + CE</span></div>
+        <div class="meta"><span>9. OVERALL RESULT</span><span>Pass / Fail</span></div>
         <div class="main-val" id="valVerdict">—</div>
         <div class="sub" id="subVerdict">—</div>
         <div class="status-badge status-info" id="badgeVerdict">—</div>
@@ -414,7 +414,7 @@
 
     <!-- FORMULAS & STANDARDS DRAWER -->
     <details class="assumptions-box">
-      <summary>Engineering Methodology, Textbook Equations & Standard References</summary>
+      <summary>Calculation Formulas &amp; Standard References</summary>
       <div class="formula-grid">
 
         <!-- 1. MASS, UDL & SKATE BIAS -->
@@ -465,7 +465,7 @@
               <span class="eq-num">(2.2)</span>
             </div>
             <div class="eq-row">
-              <span class="math"><i>p</i><sub>mean</sub> = <span class="frac"><span class="num"><i>F</i></span><span class="den"><i>A</i></span></span>, &nbsp; <i>p</i><sub>max</sub> = 1.273 <i>p</i><sub>mean</sub> &le; min(<i>P</i><sub>allow</sub>, 0.4 <i>f</i><sub>cu</sub>)</span>
+              <span class="math"><i>p</i><sub>mean</sub> = <span class="frac"><span class="num"><i>F</i></span><span class="den"><i>A</i></span></span>, &nbsp; <i>p</i><sub>max</sub> = 1.273 <i>p</i><sub>mean</sub> &le; min(<i>P</i><sub>allow</sub>, 0.4 <i>f</i><sub>cu</sub>) <small class="eq-note">(plate: <i>p</i><sub>max</sub> = <i>p</i><sub>mean</sub>)</small></span>
               <span class="eq-num">(2.3)</span>
             </div>
           </div>
@@ -486,11 +486,11 @@
               <span class="eq-num">(3.1)</span>
             </div>
             <div class="eq-row">
-              <span class="math"><b>BS 8110 (1.5<i>d</i>):</b> <i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 12<i>d</i>, &nbsp; <i>v</i><sub>c</sub> = <span class="frac"><span class="num">0.79</span><span class="den">1.25</span></span>(100&rho;<sub>l</sub>)<sup>1/3</sup>(<span class="frac"><span class="num">400</span><span class="den"><i>d</i></span></span>)<sup>1/4</sup>(<span class="frac"><span class="num"><i>f</i><sub>cu</sub></span><span class="den">25</span></span>)<sup>1/3</sup></span>
+              <span class="math"><b>BS 8110 (1.5<i>d</i>):</b> <i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 12<i>d</i>, &nbsp; <i>v</i><sub>c</sub> = <span class="frac"><span class="num">0.79</span><span class="den">1.25</span></span>(100&rho;<sub>l</sub>)<sup>1/3</sup>(<span class="frac"><span class="num">400</span><span class="den"><i>d</i></span></span>)<sup>1/4</sup>(<span class="frac"><span class="num"><i>f</i><sub>cu</sub></span><span class="den">25</span></span>)<sup>1/3</sup>, &nbsp; <i>v</i><sub>max</sub> = min(0.8&radic;<i>f</i><sub>cu</sub>, 5)</span>
               <span class="eq-num">(3.2)</span>
             </div>
             <div class="eq-row">
-              <span class="math"><b>EC2 (2.0<i>d</i>):</b> <i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 4&pi;<i>d</i>, &nbsp; <i>v</i><sub>Rd,c</sub> = max(0.12 <i>k</i>(100&rho;<sub>l</sub> <i>f</i><sub>ck</sub>)<sup>1/3</sup>, 0.035 <i>k</i><sup>3/2</sup><i>f</i><sub>ck</sub><sup>1/2</sup>)</span>
+              <span class="math"><b>EC2 (2.0<i>d</i>):</b> <i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 4&pi;<i>d</i>, &nbsp; <i>v</i><sub>Rd,c</sub> = max(0.12 <i>k</i>(100&rho;<sub>l</sub> <i>f</i><sub>ck</sub>)<sup>1/3</sup>, 0.035 <i>k</i><sup>3/2</sup><i>f</i><sub>ck</sub><sup>1/2</sup>), &nbsp; <i>v</i><sub>Rd,max</sub> = 0.4&nu;<i>f</i><sub>cd</sub></span>
               <span class="eq-num">(3.3)</span>
             </div>
           </div>
@@ -507,7 +507,7 @@
           </p>
           <div class="eq-card">
             <div class="eq-row">
-              <span class="math"><i>M</i><sub>UDL,bench</sub> = <span class="frac"><span class="num"><i>q</i><sub>rating</sub> &middot; <i>L</i><sup>2</sup></span><span class="den">8</span></span>, &nbsp; <i>b</i><sub>e</sub> = <i>b</i><sub>load</sub> + 2.4<i>a</i><sub>k</sub>(1 &minus; <span class="frac"><span class="num"><i>a</i><sub>k</sub></span><span class="den"><i>L</i></span></span>)</span>
+              <span class="math"><i>M</i><sub>UDL,bench</sub> = <span class="frac"><span class="num"><i>q</i><sub>rating</sub> &middot; <i>L</i><sup>2</sup></span><span class="den">8</span></span>, &nbsp; <i>b</i><sub>e</sub> = min(<i>W</i><sub>base</sub>, <i>b</i><sub>load</sub> + 2.4<i>a</i><sub>k</sub>(1 &minus; <span class="frac"><span class="num"><i>a</i><sub>k</sub></span><span class="den"><i>L</i></span></span>)) <small class="eq-note">(single-rail strip)</small></span>
               <span class="eq-num">(4.1)</span>
             </div>
             <div class="eq-row">
@@ -527,6 +527,6 @@
   </section>
 </main>
 
-<script type="module" src="js/main.js?v=6"></script>
+<script type="module" src="js/main.js?v=9"></script>
 </body>
 </html>

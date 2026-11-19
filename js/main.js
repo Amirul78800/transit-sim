@@ -1,6 +1,6 @@
-import { CATALOG_MODELS, CONFIRMED_UDL_KPA } from './data.js?v=6';
-import { runPhysicsCalculations } from './physics.js?v=6';
-import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js?v=6';
+import { CATALOG_MODELS, CONFIRMED_UDL_KPA } from './data.js?v=9';
+import { runPhysicsCalculations } from './physics.js?v=9';
+import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js?v=9';
 
 let activeSetup = 4; // 1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point
 let designCode = 'BS8110';
@@ -37,6 +37,7 @@ const dom = {
   inputSpanL: document.getElementById('inputSpanL'),
   inputFloorStress: document.getElementById('inputFloorStress'),
 
+  lblHeaderSub: document.getElementById('lblHeaderSub'),
   lblSetupSummary: document.getElementById('lblSetupSummary'),
   lblSkateBias: document.getElementById('lblSkateBias'),
   biasGroup: document.getElementById('biasGroup'),
@@ -189,7 +190,7 @@ function bindEvents() {
     dom.inputSlabDepth, dom.inputRhoL, dom.inputSpanL, dom.inputFloorStress
   ];
   liveInputs.forEach((el) => el.addEventListener('input', () => {
-    if (el === dom.inputFollowerWeight || el === dom.inputFollowerWheels || el === dom.inputFollowerDia || el === dom.inputFollowerWidth) {
+    if (el === dom.inputFollowerWheels || el === dom.inputFollowerDia || el === dom.inputFollowerWidth) {
       dom.selectFollowerModel.value = 'CUSTOM';
     }
     if (el === dom.inputPlatL || el === dom.inputPlatW) {
@@ -226,7 +227,9 @@ function bindEvents() {
     document.getElementById(`btnSetup${m}`).addEventListener('click', () => setMode(m));
   });
 
-  window.addEventListener('resize', () => requestAnimationFrame(update));
+  window.addEventListener('resize', () => requestAnimationFrame(() => {
+    if (cachedInputs && cachedResults) renderCanvases(cachedInputs, cachedResults, currentTheme === 'dark');
+  }));
   window.addEventListener('beforeprint', () => {
     if (cachedInputs && cachedResults) renderCanvases(cachedInputs, cachedResults, false);
   });
@@ -337,7 +340,7 @@ function update() {
     concreteGradeKey: dom.selectConcreteGrade.value || null,
     pAllowFloor,
     hSlab,
-    dSlab: hSlab ? Math.max(80, hSlab - 30) : null,
+    dSlab: hSlab ? Math.max(20, hSlab - 30) : null,
     rhoL: rhoPct ? rhoPct / 100.0 : null,
     designCode,
     spanL,
@@ -345,6 +348,7 @@ function update() {
     activeSetup
   };
 
+  dom.lblHeaderSub.innerText = `Floor Load Rating: ${udlLimit.toFixed(2)} kN/m²`;
   dom.lblSkateBias.innerText = `${inputs.skateBiasPct.toFixed(0)}%`;
   dom.lblFollowerWeight.innerText = `${inputs.followerUnitWeight.toFixed(0)} kg`;
   dom.lblFollowerWheels.innerText = `${inputs.nFollowerWheels}`;
@@ -419,7 +423,7 @@ function update() {
     setCardStatus(dom.cardPressure, dom.badgePressure, res.isMode1Pass ? 'pass' : 'fail', res.isMode1Pass ? 'PASS' : 'FAIL');
   } else {
     dom.subPressure.innerText = `p_mean: ${res.contactPressure_mean_MPa.toFixed(2)} MPa | Limit: —`;
-    setCardStatus(dom.cardPressure, dom.badgePressure, 'info', 'PENDING CE LIMIT');
+    setCardStatus(dom.cardPressure, dom.badgePressure, 'info', 'PENDING LIMIT');
   }
 
   // Card 5: Mode 2 Shear
@@ -507,15 +511,15 @@ function update() {
 
   if (failed.length > 0) {
     dom.valVerdict.innerText = `FAIL (${failed.join(', ')})`;
-    dom.subVerdict.innerText = pending.length > 0 ? `Pending CE: ${pending.join(', ')}` : 'Exceeds limit';
+    dom.subVerdict.innerText = pending.length > 0 ? `Pending: ${pending.join(', ')}` : 'Exceeds limit';
     setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'fail', 'FAIL');
   } else if (pending.length > 0) {
     dom.valVerdict.innerText = 'UDL PASS';
-    dom.subVerdict.innerText = `Pending CE: ${pending.join(', ')}`;
-    setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'warn', 'PENDING CE INPUT');
+    dom.subVerdict.innerText = `Pending: ${pending.join(', ')}`;
+    setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'warn', 'PENDING INPUT');
   } else {
     dom.valVerdict.innerText = 'ALL PASS';
-    dom.subVerdict.innerText = 'UDL + Modes 1–3 compliant';
+    dom.subVerdict.innerText = 'All checks pass';
     setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'pass', 'PASS');
   }
 
