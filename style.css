@@ -660,13 +660,19 @@ canvas {
     gap: 8px !important;
     margin-bottom: 12px !important;
   }
-  .panel, .canvas-panel, .dash-card, .tree-container {
+  .panel, .canvas-panel, .dash-card, .tree-container, .assumptions-box, .formula-block, .eq-card, .sub-box {
     border: 1px solid #cbd5e1 !important;
     background: #ffffff !important;
     color: #0f172a !important;
     box-shadow: none !important;
     page-break-inside: avoid;
     margin-bottom: 10px !important;
+  }
+  .math, .formula-head strong, .formula-prose, .eq-num, .eq-note, .std-ref {
+    color: #0f172a !important;
+  }
+  .frac .num, .rad-over {
+    border-color: #0f172a !important;
   }
   .dashboard-grid {
     grid-template-columns: repeat(3, 1fr) !important;
