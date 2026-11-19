@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://loadskatesim.amirulazhj.tech/sitemap.xml
