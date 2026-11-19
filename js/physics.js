@@ -1,7 +1,7 @@
 import {
   G, CONFIRMED_UDL_KPA, MAT_DATA, PLATE_MAT_DATA,
   POWERED_MODELS, CATALOG_MODELS, CONCRETE_GRADES
-} from './data.js?v=9';
+} from './data.js?v=10';
 
 const isPosNum = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
@@ -154,71 +154,14 @@ function evaluateSkateUnit({ nomSkate_kN, peakSkate_kN, nWheels, wheelsPerFork =
   };
 }
 
-// Mode order: 1=2-Skates, 2=4-Point (Diamond), 3=6-Point, 4=8-Point, 5=10-Point
-function buildSkateCoords(activeSetup, platL, platW, poweredChassisW, followerChassisW) {
-  const coords = [];
-  if (activeSetup === 1) {
-    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-  } else if (activeSetup === 2) {
-    // 4-Point Diamond
-    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: platL / 2, y: 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL / 2, y: platW - 0.25, b: followerChassisW / 1000 });
-  } else if (activeSetup === 3) {
-    // 6-Point Perimeter
-    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: 0.30, y: 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
-  } else if (activeSetup === 4) {
-    // 8-Point (P1/P2 at short-edge centers, 6 followers at 4 corners + 2 long-rail midpoints)
-    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: 0.30, y: 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL / 2, y: 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL / 2, y: platW - 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: 0.25, b: followerChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
-  } else {
-    // 10-Point
-    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
-    const xs = [0.45, 0.45 + (platL - 0.90) / 3, 0.45 + (2 * (platL - 0.90)) / 3, platL - 0.45];
-    xs.forEach((xp) => {
-      coords.push({ x: xp, y: 0.25, b: followerChassisW / 1000 });
-      coords.push({ x: xp, y: platW - 0.25, b: followerChassisW / 1000 });
-    });
-  }
-  return coords;
-}
-
-export function runPhysicsCalculations(inputs) {
-  const {
-    mPnm, mBase, addLoadPerFollower = 0,
-    poweredModelKey, followerModelKey,
-    followerUnitWeight, nFollowerWheels, dFollower, wFollower, matKey, shoreA,
-    platL = 3.80, platW = 2.40, skateBiasPct,
-    plateEnabled, B_plate, L_plate, t_plate, plateMatKey,
-    pAllowFloor, hSlab, dSlab, concreteGradeKey, rhoL, designCode,
-    spanL, udlLimit_kPa = CONFIRMED_UDL_KPA,
-    activeSetup
-  } = inputs;
-
-  const safePlatL = isPosNum(platL) ? Math.max(0.90, platL) : 3.80;
-  const safePlatW = isPosNum(platW) ? Math.max(0.60, platW) : 2.40;
-  const platArea = safePlatL * safePlatW;
-  const plat = { length: safePlatL, width: safePlatW, area: platArea, label: `${safePlatL.toFixed(2)} × ${safePlatW.toFixed(2)} m (${platArea.toFixed(2)} m²)` };
-
-  const poweredSpec = POWERED_MODELS[poweredModelKey] || POWERED_MODELS['TS-10T'];
-  const followerSpec = CATALOG_MODELS[followerModelKey] || null;
-  const concrete = (concreteGradeKey && CONCRETE_GRADES[concreteGradeKey]) || null;
-  const plateMat = PLATE_MAT_DATA[plateMatKey] || PLATE_MAT_DATA.ss400;
-
+// Shared Spreader Plate + Modes 1, 2, 3 + UDL Evaluator
+function evaluateSlabChecks({
+  plat, grossMass, grossWeight_kN, phiDynamic,
+  peakSupportLoad_kN, maxForkLoad_kN, governing,
+  plateEnabled, B_plate, L_plate, t_plate, plateMat,
+  pAllowFloor, hSlab, dSlab, concrete, rhoL, designCode, spanL, udlLimit_kPa,
+  baseCoords
+}) {
   const hasHSlab = isPosNum(hSlab);
   const effectiveDSlab = isPosNum(dSlab) ? Math.min(hSlab || dSlab, dSlab) : (hasHSlab ? Math.max(20, hSlab - 30) : null);
   const hasRhoL = isPosNum(rhoL);
@@ -226,88 +169,16 @@ export function runPhysicsCalculations(inputs) {
   const hasPAllow = isPosNum(pAllowFloor);
   const hasUdlLimit = isPosNum(udlLimit_kPa);
 
-  const phiDynamic = 1.20;
   const gammaULS = designCode === 'EC2' ? 1.50 : 1.60;
-
-  // 1. Mass Stack (1=2sk, 2=4pt, 3=6pt, 4=8pt, 5=10pt)
-  const totalPoweredTare = 2 * poweredSpec.unitTare;
-  const numFollowers =
-    activeSetup === 1 ? 0 :
-    activeSetup === 2 ? 2 :
-    activeSetup === 3 ? 4 :
-    activeSetup === 4 ? 6 : 8;
-  const totalSkates = 2 + numFollowers;
-
-  const unitFollowerMass = Number.isFinite(followerUnitWeight) && followerUnitWeight >= 0
-    ? followerUnitWeight
-    : (followerSpec ? followerSpec.unitTare : 50);
-  const totalFollowerTare = unitFollowerMass * numFollowers;
-  const totalAdditionalLoad = (Number.isFinite(addLoadPerFollower) ? addLoadPerFollower : 0) * numFollowers;
-
-  const grossMass = mPnm + mBase + totalPoweredTare + totalFollowerTare + totalAdditionalLoad;
-  const grossWeight_kN = (grossMass * G) / 1000;
-
   const singlePlateMass = (B_plate / 1000) * (L_plate / 1000) * (t_plate / 1000) * plateMat.rho;
 
-  // 2. Confirmed UDL Check
+  // UDL Check
   const udl_kPa = grossWeight_kN / plat.area;
   const udl_ton = (grossMass / 1000) / plat.area;
   const udlLimit_ton = hasUdlLimit ? udlLimit_kPa / G : null;
   const isUdlPass = hasUdlLimit ? (udl_kPa <= udlLimit_kPa) : null;
 
-  // 3. Skate & Wheel Static vs Peak (Both Powered & Follower)
-  const nominalSkateLoad_kN = grossWeight_kN / totalSkates;
-  const minBias = 1.0 / totalSkates;
-  const defaultBias =
-    activeSetup === 1 ? 0.60 :
-    activeSetup === 2 ? 0.35 :
-    activeSetup === 3 ? 0.25 :
-    activeSetup === 4 ? 0.20 : 0.19;
-
-  const effectiveBias = Math.max(minBias, skateBiasPct ? skateBiasPct / 100 : defaultBias);
-  const peakSkateLoad_kN = grossWeight_kN * effectiveBias * phiDynamic;
-
-  const powEval = evaluateSkateUnit({
-    nomSkate_kN: nominalSkateLoad_kN,
-    peakSkate_kN: peakSkateLoad_kN,
-    nWheels: poweredSpec.wheels,
-    wheelsPerFork: poweredSpec.wheelsPerFork,
-    dia: poweredSpec.dia,
-    width: poweredSpec.width,
-    pairWidth: poweredSpec.wheelsPerFork === 2 ? poweredSpec.width * 2 : poweredSpec.width,
-    matKey: 'pu',
-    shoreA: poweredSpec.shoreA,
-    chassisW: poweredSpec.chassisW,
-    chassisL: poweredSpec.chassisL
-  });
-
-  let folEval = null;
-  if (numFollowers > 0) {
-    folEval = evaluateSkateUnit({
-      nomSkate_kN: nominalSkateLoad_kN,
-      peakSkate_kN: peakSkateLoad_kN,
-      nWheels: nFollowerWheels,
-      wheelsPerFork: followerSpec ? followerSpec.wheelsPerFork : 1,
-      dia: dFollower,
-      width: wFollower,
-      pairWidth: followerSpec ? followerSpec.pairWidth : wFollower,
-      matKey,
-      shoreA,
-      chassisW: followerSpec ? followerSpec.chassisW : 520,
-      chassisL: followerSpec ? followerSpec.chassisL : 600
-    });
-  }
-
-  let governing = powEval;
-  let governingIsPowered = true;
-  if (folEval && (folEval.peakWheel_kN > powEval.peakWheel_kN || folEval.hertz.p_max > powEval.hertz.p_max)) {
-    governing = folEval;
-    governingIsPowered = false;
-  }
-  const maxWheelLoad_kN = folEval ? Math.max(powEval.peakWheel_kN, folEval.peakWheel_kN) : powEval.peakWheel_kN;
-  const maxForkLoad_kN = folEval ? Math.max(powEval.peakFork_kN, folEval.peakFork_kN) : powEval.peakFork_kN;
-
-  // 4. Spreader Plate
+  // Spreader Plate
   const B_code_min = hasHSlab ? 2 * hSlab : null;
   const bogieWidth = governing.chassisW;
   const isPlateUndersized = plateEnabled && (B_plate < bogieWidth || L_plate < governing.chassisL);
@@ -318,7 +189,7 @@ export function runPhysicsCalculations(inputs) {
   const cantilever_c = (plateEnabled && !isPlateUndersized)
     ? Math.max(0, (effectivePlateCapW - bogieWidth) / 2)
     : 0;
-  const pNominal_MPa = (peakSkateLoad_kN * 1000) / (effectivePlateCapW * plateContactL);
+  const pNominal_MPa = (peakSupportLoad_kN * 1000) / (effectivePlateCapW * plateContactL);
 
   let t_req = 0;
   if (plateEnabled && cantilever_c > 0) {
@@ -337,10 +208,10 @@ export function runPhysicsCalculations(inputs) {
     }
   }
 
-  // 5. Mode 1
+  // Mode 1: Surface Contact Stress
   let contactPressure_mean_MPa, contactPressure_max_MPa;
   if (plateEnabled && isRigid) {
-    contactPressure_mean_MPa = (peakSkateLoad_kN * 1000) / (Beff * plateContactL);
+    contactPressure_mean_MPa = (peakSupportLoad_kN * 1000) / (Beff * plateContactL);
     contactPressure_max_MPa = contactPressure_mean_MPa;
   } else {
     contactPressure_mean_MPa = governing.hertz.p_mean;
@@ -354,9 +225,9 @@ export function runPhysicsCalculations(inputs) {
     concreteDryBearing_MPa !== null ? concreteDryBearing_MPa : null;
   const isMode1Pass = mode1Limit_MPa !== null ? (contactPressure_max_MPa <= mode1Limit_MPa) : null;
 
-  // 6. Mode 2
+  // Mode 2: Punching Shear
   const shearLoad_ULS_N = (plateEnabled && isRigid)
-    ? (peakSkateLoad_kN * 1000 * gammaULS)
+    ? (peakSupportLoad_kN * 1000 * gammaULS)
     : (maxForkLoad_kN * 1000 * gammaULS);
   const shearA1 = (plateEnabled && isRigid) ? Beff : governing.patchW_mm;
   const shearA2 = (plateEnabled && isRigid) ? plateContactL : governing.patchL_mm;
@@ -383,7 +254,7 @@ export function runPhysicsCalculations(inputs) {
   const shearTopW_mm = (plateEnabled && !isPlateUndersized) ? Beff : governing.patchW_mm;
   const bottomSpread_mm = hasHSlab ? (shearTopW_mm + 2 * hSlab) : null;
 
-  // 7. Mode 3
+  // Mode 3: Method B Slab Bending
   const M_UDL_benchmark = (hasSpanL && hasUdlLimit) ? (udlLimit_kPa * 1.0 * spanL * spanL) / 8.0 : null;
   let M_imposed_max = null;
   let M_raw_max = null;
@@ -396,17 +267,13 @@ export function runPhysicsCalculations(inputs) {
     b_e_governing = 1.0;
     bendingOrientation = 'Longitudinal';
 
-    const baseCoords = buildSkateCoords(
-      activeSetup, plat.length, plat.width,
-      poweredSpec.chassisW, followerSpec ? followerSpec.chassisW : 520
-    );
     const totalDyn = grossWeight_kN * phiDynamic;
-    const remLoad = Math.max(0, totalDyn - peakSkateLoad_kN) / Math.max(1, baseCoords.length - 1);
+    const remLoad = Math.max(0, totalDyn - peakSupportLoad_kN) / Math.max(1, baseCoords.length - 1);
 
     for (let peakIdx = 0; peakIdx < baseCoords.length; peakIdx++) {
       const layout = baseCoords.map((c, idx) => ({
         ...c,
-        P: idx === peakIdx ? peakSkateLoad_kN : remLoad
+        P: idx === peakIdx ? peakSupportLoad_kN : remLoad
       }));
 
       for (let shift = -plat.length; shift <= spanL + 0.1; shift += 0.10) {
@@ -463,23 +330,287 @@ export function runPhysicsCalculations(inputs) {
   const allPass = gates.some((g) => g === false) ? false : gates.every((g) => g === true) ? true : null;
 
   return {
-    plat, poweredSpec, followerSpec, concrete, plateMat,
     hasHSlab, effectiveDSlab, hasRhoL, hasSpanL, hasPAllow,
-    grossMass, grossWeight_kN, totalPoweredTare,
-    unitFollowerMass, totalFollowerTare,
-    addLoadPerFollower: Number.isFinite(addLoadPerFollower) ? addLoadPerFollower : 0,
-    totalAdditionalLoad,
-    numFollowers, totalSkates, singlePlateMass,
-    udl_kPa, udl_ton, udlLimit_kPa, udlLimit_ton, isUdlPass,
-    effectiveBias, phiDynamic, gammaULS,
-    nominalSkateLoad_kN, peakSkateLoad_kN,
-    powEval, folEval, governing, governingIsPowered,
-    maxWheelLoad_kN, maxForkLoad_kN,
-    B_code_min, t_req, isRigid, isCurling, isPlateUndersized, Beff, shearTopW_mm,
+    singlePlateMass, udl_kPa, udl_ton, udlLimit_kPa, udlLimit_ton, isUdlPass,
+    gammaULS, B_code_min, t_req, isRigid, isCurling, isPlateUndersized, Beff, shearTopW_mm,
     contactPressure_mean_MPa, contactPressure_max_MPa,
     concreteDryBearing_MPa, mode1Limit_MPa,
     punch, shearLoad_ULS_N, bottomSpread_mm, isSpreadOK,
     M_UDL_benchmark, M_imposed_max, M_raw_max, b_e_governing, bendingOrientation,
     isMode1Pass, isMode2Pass, isMode3Pass, allPass
+  };
+}
+
+// AMR / Skate coordinates (1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point)
+function buildSkateCoords(activeSetup, platL, platW, poweredChassisW, followerChassisW) {
+  const coords = [];
+  if (activeSetup === 1) {
+    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+  } else if (activeSetup === 2) {
+    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL / 2, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL / 2, y: platW - 0.25, b: followerChassisW / 1000 });
+  } else if (activeSetup === 3) {
+    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: 0.30, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
+  } else if (activeSetup === 4) {
+    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: 0.30, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL / 2, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL / 2, y: platW - 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: 0.25, b: followerChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW - 0.25, b: followerChassisW / 1000 });
+  } else {
+    coords.push({ x: 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    coords.push({ x: platL - 0.30, y: platW / 2, b: poweredChassisW / 1000 });
+    const xs = [0.45, 0.45 + (platL - 0.90) / 3, 0.45 + (2 * (platL - 0.90)) / 3, platL - 0.45];
+    xs.forEach((xp) => {
+      coords.push({ x: xp, y: 0.25, b: followerChassisW / 1000 });
+      coords.push({ x: xp, y: platW - 0.25, b: followerChassisW / 1000 });
+    });
+  }
+  return coords;
+}
+
+// Mobile Base Caster coordinates (numCasters = 4, 6, or 8)
+function buildCasterCoords(numCasters, platL, platW, casterWidthM) {
+  const coords = [];
+  if (numCasters === 4) {
+    coords.push({ x: 0.30, y: 0.25, b: casterWidthM });
+    coords.push({ x: 0.30, y: platW - 0.25, b: casterWidthM });
+    coords.push({ x: platL - 0.30, y: 0.25, b: casterWidthM });
+    coords.push({ x: platL - 0.30, y: platW - 0.25, b: casterWidthM });
+  } else if (numCasters === 6) {
+    coords.push({ x: 0.30, y: 0.25, b: casterWidthM });
+    coords.push({ x: 0.30, y: platW - 0.25, b: casterWidthM });
+    coords.push({ x: platL / 2, y: 0.25, b: casterWidthM });
+    coords.push({ x: platL / 2, y: platW - 0.25, b: casterWidthM });
+    coords.push({ x: platL - 0.30, y: 0.25, b: casterWidthM });
+    coords.push({ x: platL - 0.30, y: platW - 0.25, b: casterWidthM });
+  } else {
+    const xs = [0.35, 0.35 + (platL - 0.70) / 3, 0.35 + (2 * (platL - 0.70)) / 3, platL - 0.35];
+    xs.forEach((xp) => {
+      coords.push({ x: xp, y: 0.25, b: casterWidthM });
+      coords.push({ x: xp, y: platW - 0.25, b: casterWidthM });
+    });
+  }
+  return coords;
+}
+
+export function runPhysicsCalculations(inputs) {
+  const {
+    mPnm, mBase, addLoadPerFollower = 0,
+    poweredModelKey, followerModelKey,
+    followerUnitWeight, nFollowerWheels, dFollower, wFollower, matKey, shoreA,
+    platL = 3.80, platW = 2.40, skateBiasPct,
+    plateEnabled, B_plate, L_plate, t_plate, plateMatKey,
+    pAllowFloor, hSlab, dSlab, concreteGradeKey, rhoL, designCode,
+    spanL, udlLimit_kPa = CONFIRMED_UDL_KPA,
+    activeSetup
+  } = inputs;
+
+  const safePlatL = isPosNum(platL) ? Math.max(0.90, platL) : 3.80;
+  const safePlatW = isPosNum(platW) ? Math.max(0.60, platW) : 2.40;
+  const platArea = safePlatL * safePlatW;
+  const plat = { length: safePlatL, width: safePlatW, area: platArea, label: `${safePlatL.toFixed(2)} × ${safePlatW.toFixed(2)} m (${platArea.toFixed(2)} m²)` };
+
+  const poweredSpec = POWERED_MODELS[poweredModelKey] || POWERED_MODELS['TS-10T'];
+  const followerSpec = CATALOG_MODELS[followerModelKey] || null;
+  const concrete = (concreteGradeKey && CONCRETE_GRADES[concreteGradeKey]) || null;
+  const plateMat = PLATE_MAT_DATA[plateMatKey] || PLATE_MAT_DATA.ss400;
+
+  const phiDynamic = 1.20;
+
+  const totalPoweredTare = 2 * poweredSpec.unitTare;
+  const numFollowers =
+    activeSetup === 1 ? 0 :
+    activeSetup === 2 ? 2 :
+    activeSetup === 3 ? 4 :
+    activeSetup === 4 ? 6 : 8;
+  const totalSkates = 2 + numFollowers;
+
+  const unitFollowerMass = Number.isFinite(followerUnitWeight) && followerUnitWeight >= 0
+    ? followerUnitWeight
+    : (followerSpec ? followerSpec.unitTare : 50);
+  const totalFollowerTare = unitFollowerMass * numFollowers;
+  const totalAdditionalLoad = (Number.isFinite(addLoadPerFollower) ? addLoadPerFollower : 0) * numFollowers;
+
+  const grossMass = mPnm + mBase + totalPoweredTare + totalFollowerTare + totalAdditionalLoad;
+  const grossWeight_kN = (grossMass * G) / 1000;
+
+  const nominalSkateLoad_kN = grossWeight_kN / totalSkates;
+  const minBias = 1.0 / totalSkates;
+  const defaultBias =
+    activeSetup === 1 ? 0.60 :
+    activeSetup === 2 ? 0.35 :
+    activeSetup === 3 ? 0.25 :
+    activeSetup === 4 ? 0.20 : 0.19;
+
+  const effectiveBias = Math.max(minBias, skateBiasPct ? skateBiasPct / 100 : defaultBias);
+  const peakSkateLoad_kN = grossWeight_kN * effectiveBias * phiDynamic;
+
+  const powEval = evaluateSkateUnit({
+    nomSkate_kN: nominalSkateLoad_kN,
+    peakSkate_kN: peakSkateLoad_kN,
+    nWheels: poweredSpec.wheels,
+    wheelsPerFork: poweredSpec.wheelsPerFork,
+    dia: poweredSpec.dia,
+    width: poweredSpec.width,
+    pairWidth: poweredSpec.wheelsPerFork === 2 ? poweredSpec.width * 2 : poweredSpec.width,
+    matKey: 'pu',
+    shoreA: poweredSpec.shoreA,
+    chassisW: poweredSpec.chassisW,
+    chassisL: poweredSpec.chassisL
+  });
+
+  let folEval = null;
+  if (numFollowers > 0) {
+    folEval = evaluateSkateUnit({
+      nomSkate_kN: nominalSkateLoad_kN,
+      peakSkate_kN: peakSkateLoad_kN,
+      nWheels: nFollowerWheels,
+      wheelsPerFork: followerSpec ? followerSpec.wheelsPerFork : 1,
+      dia: dFollower,
+      width: wFollower,
+      pairWidth: followerSpec ? followerSpec.pairWidth : wFollower,
+      matKey,
+      shoreA,
+      chassisW: followerSpec ? followerSpec.chassisW : 520,
+      chassisL: followerSpec ? followerSpec.chassisL : 600
+    });
+  }
+
+  let governing = powEval;
+  let governingIsPowered = true;
+  if (folEval && (folEval.peakWheel_kN > powEval.peakWheel_kN || folEval.hertz.p_max > powEval.hertz.p_max)) {
+    governing = folEval;
+    governingIsPowered = false;
+  }
+  const maxWheelLoad_kN = folEval ? Math.max(powEval.peakWheel_kN, folEval.peakWheel_kN) : powEval.peakWheel_kN;
+  const maxForkLoad_kN = folEval ? Math.max(powEval.peakFork_kN, folEval.peakFork_kN) : powEval.peakFork_kN;
+
+  const baseCoords = buildSkateCoords(
+    activeSetup, plat.length, plat.width,
+    poweredSpec.chassisW, followerSpec ? followerSpec.chassisW : 520
+  );
+
+  const slab = evaluateSlabChecks({
+    plat, grossMass, grossWeight_kN, phiDynamic,
+    peakSupportLoad_kN: peakSkateLoad_kN,
+    maxForkLoad_kN,
+    governing,
+    plateEnabled, B_plate, L_plate, t_plate, plateMat,
+    pAllowFloor, hSlab, dSlab, concrete, rhoL, designCode, spanL, udlLimit_kPa,
+    baseCoords
+  });
+
+  return {
+    plat, poweredSpec, followerSpec, concrete, plateMat,
+    grossMass, grossWeight_kN, totalPoweredTare,
+    unitFollowerMass, totalFollowerTare,
+    addLoadPerFollower: Number.isFinite(addLoadPerFollower) ? addLoadPerFollower : 0,
+    totalAdditionalLoad,
+    numFollowers, totalSkates,
+    effectiveBias, phiDynamic,
+    nominalSkateLoad_kN, peakSkateLoad_kN,
+    powEval, folEval, governing, governingIsPowered,
+    maxWheelLoad_kN, maxForkLoad_kN,
+    ...slab
+  };
+}
+
+export function runMobileBaseCalculations(inputs) {
+  const {
+    mPnm, mFrame,
+    numCasters = 6,
+    wheelsPerCaster = 2, // 1 = Single, 2 = Twin-Wheel
+    casterUnitMass = 24,
+    dCaster = 200,
+    wCaster = 50,
+    matKey = 'pu',
+    shoreA = 95,
+    platL = 3.80,
+    platW = 2.40,
+    casterBiasPct,
+    phiDynamic = 1.30,
+    plateEnabled, B_plate, L_plate, t_plate, plateMatKey,
+    pAllowFloor, hSlab, dSlab, concreteGradeKey, rhoL, designCode,
+    spanL, udlLimit_kPa = CONFIRMED_UDL_KPA
+  } = inputs;
+
+  const safePlatL = isPosNum(platL) ? Math.max(0.90, platL) : 3.80;
+  const safePlatW = isPosNum(platW) ? Math.max(0.60, platW) : 2.40;
+  const platArea = safePlatL * safePlatW;
+  const plat = { length: safePlatL, width: safePlatW, area: platArea, label: `${safePlatL.toFixed(2)} × ${safePlatW.toFixed(2)} m (${platArea.toFixed(2)} m²)` };
+
+  const concrete = (concreteGradeKey && CONCRETE_GRADES[concreteGradeKey]) || null;
+  const plateMat = PLATE_MAT_DATA[plateMatKey] || PLATE_MAT_DATA.ss400;
+
+  const totalCasterMass = numCasters * casterUnitMass;
+  const grossMass = mPnm + mFrame + totalCasterMass;
+  const grossWeight_kN = (grossMass * G) / 1000;
+  const totalWheels = numCasters * wheelsPerCaster;
+
+  // Caster Load Sharing
+  const nominalCasterLoad_kN = grossWeight_kN / numCasters;
+  const staticWheelLoad_kN = nominalCasterLoad_kN / wheelsPerCaster;
+
+  const minBias = 1.0 / numCasters;
+  const defaultBias = numCasters === 4 ? 0.35 : (numCasters === 6 ? 0.25 : 0.20);
+  const effectiveBias = Math.max(minBias, casterBiasPct ? casterBiasPct / 100 : defaultBias);
+
+  const peakCasterLoad_kN = grossWeight_kN * effectiveBias * phiDynamic;
+  const peakWheelLoad_kN = peakCasterLoad_kN / wheelsPerCaster;
+
+  // Mode 1 Hertz contact on single wheel; Mode 2 punching shear on combined fork patch
+  const hertz = hertzLineContact(peakWheelLoad_kN * 1000, dCaster, wCaster, matKey, shoreA);
+  const forkSpanW_mm = wheelsPerCaster === 2 ? (2 * wCaster + 20) : wCaster;
+  const patchW_mm = Math.max(50, forkSpanW_mm);
+  const patchL_mm = Math.max(50, hertz.contactWidth_mm);
+
+  const chassisW_mm = Math.max(120, forkSpanW_mm + 40);
+  const chassisL_mm = Math.max(180, dCaster + 40);
+
+  const governing = {
+    peakSkate_kN: peakCasterLoad_kN,
+    peakFork_kN: peakCasterLoad_kN,
+    peakWheel_kN: peakWheelLoad_kN,
+    hertz,
+    patchW_mm,
+    patchL_mm,
+    chassisW: chassisW_mm,
+    chassisL: chassisL_mm
+  };
+
+  const baseCoords = buildCasterCoords(numCasters, plat.length, plat.width, chassisW_mm / 1000);
+
+  const slab = evaluateSlabChecks({
+    plat, grossMass, grossWeight_kN, phiDynamic,
+    peakSupportLoad_kN: peakCasterLoad_kN,
+    maxForkLoad_kN: peakCasterLoad_kN,
+    governing,
+    plateEnabled, B_plate, L_plate, t_plate, plateMat,
+    pAllowFloor, hSlab, dSlab, concrete, rhoL, designCode, spanL, udlLimit_kPa,
+    baseCoords
+  });
+
+  return {
+    plat, concrete, plateMat,
+    numCasters, wheelsPerCaster, totalWheels,
+    casterUnitMass, totalCasterMass,
+    grossMass, grossWeight_kN,
+    effectiveBias, phiDynamic,
+    nominalCasterLoad_kN, peakCasterLoad_kN,
+    staticWheelLoad_kN, peakWheelLoad_kN,
+    governing,
+    ...slab
   };
 }

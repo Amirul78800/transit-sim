@@ -1,3 +1,23 @@
+export function renderCasterLoadTree(container, res) {
+  const treeRoot = document.getElementById('treeRootVal');
+  const grossTon = (res.grossMass / 1000).toFixed(2);
+  treeRoot.innerText = `${grossTon} t / ${res.grossWeight_kN.toFixed(2)} kN`;
+
+  const wheelType = res.wheelsPerCaster === 2 ? 'Twin-Wheel' : 'Single-Wheel';
+  container.innerHTML = `
+    <div class="tree-branch-col">
+      <span style="font-size:10px; color:var(--accent); font-weight:700;">${res.numCasters}× ${wheelType} Casters (${res.totalWheels} Wheels)</span>
+      <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
+        Caster: ${res.nominalCasterLoad_kN.toFixed(2)} kN static | ${res.peakCasterLoad_kN.toFixed(2)} kN peak
+      </div>
+      <div class="tree-leaf-grid">
+        <div class="tree-leaf">STATIC WHEEL<strong>${res.staticWheelLoad_kN.toFixed(2)} kN</strong></div>
+        <div class="tree-leaf">PEAK WHEEL<strong>${res.peakWheelLoad_kN.toFixed(2)} kN</strong></div>
+      </div>
+    </div>
+  `;
+}
+
 export function renderLoadTree(container, res) {
   const treeRoot = document.getElementById('treeRootVal');
   const grossTon = (res.grossMass / 1000).toFixed(2);
@@ -212,7 +232,7 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   }
 
   // 4. Wheels & Chassis
-  const numAxles = Math.max(2, Math.ceil(numWheels / 2));
+  const numAxles = params.numAxles || Math.max(2, Math.ceil(numWheels / 2));
   const axleSpacing = D + 20;
   const bogieSpan = (numAxles - 1) * axleSpacing;
   const startX = cx - (bogieSpan * scale) / 2;
@@ -261,8 +281,8 @@ export function drawFrontElevation(canvas, params, isDark = true) {
   ctx.stroke();
 }
 
-// Mode order: 1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point
-export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad, peakLoad, plateOn, B, L, poweredName, isDark = true) {
+// Shared Top-Down Plan Renderer
+function renderPlanCanvas(canvas, { platLength, platWidth, buildUnits, nomLoad, peakLoad, peakIndex, plateOn, B, L, allowRunwayTracks, legendItems, isDark }) {
   const ctx = canvas.getContext('2d');
   const dpr = Math.max(1, window.devicePixelRatio || 1);
   const logicalW = 940;
@@ -277,7 +297,7 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
   ctx.clearRect(0, 0, logicalW, logicalH);
   const cx = logicalW / 2;
 
-  const skidW_px = Math.min(680, Math.max(400, platLength * 145));
+  const skidW_px = Math.min(680, Math.max(400, platLength * 92));
   const skidH_px = Math.min(156, Math.max(120, platWidth * 58));
   const skidX = cx - skidW_px / 2;
   const skidY = 44;
@@ -319,47 +339,7 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
 
   const edgePadX = 26;
   const edgePadY = 20;
-  const skates = [];
-
-  if (activeSetup === 1) {
-    skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
-  } else if (activeSetup === 2) {
-    // 4-Point Diamond
-    skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'F1', x: cx, y: skidY + edgePadY, isPowered: false });
-    skates.push({ id: 'F2', x: cx, y: skidY + skidH_px - edgePadY, isPowered: false });
-  } else if (activeSetup === 3) {
-    // 6-Point Perimeter
-    skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'C1', x: skidX + edgePadX, y: skidY + edgePadY, isPowered: false });
-    skates.push({ id: 'C2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
-    skates.push({ id: 'C3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
-    skates.push({ id: 'C4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
-  } else if (activeSetup === 4) {
-    // 8-Point (P1/P2 at short-edge centers consistent with all setups; 6 followers at corners + mid-rails)
-    skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'S1', x: skidX + edgePadX, y: skidY + edgePadY, isPowered: false });
-    skates.push({ id: 'S2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
-    skates.push({ id: 'M1', x: cx, y: skidY + edgePadY, isPowered: false });
-    skates.push({ id: 'M2', x: cx, y: skidY + skidH_px - edgePadY, isPowered: false });
-    skates.push({ id: 'S3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
-    skates.push({ id: 'S4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
-  } else {
-    // 10-Point
-    skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
-    skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
-    const spanX = skidW_px - 2 * edgePadX - 40;
-    const startRailX = skidX + edgePadX + 20;
-    for (let i = 0; i < 4; i++) {
-      const px = startRailX + (i * spanX) / 3;
-      skates.push({ id: `F${i * 2 + 1}`, x: px, y: skidY + edgePadY, isPowered: false });
-      skates.push({ id: `F${i * 2 + 2}`, x: px, y: skidY + skidH_px - edgePadY, isPowered: false });
-    }
-  }
+  const units = buildUnits({ skidX, skidY, skidW_px, skidH_px, cx, cy, edgePadX, edgePadY });
 
   if (plateOn) {
     ctx.fillStyle = isDark ? 'rgba(126, 34, 206, 0.35)' : 'rgba(168, 85, 247, 0.22)';
@@ -368,7 +348,7 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
 
     const trackH_px = Math.max(24, Math.min(46, (B / (platWidth * 1000)) * skidH_px));
     const trackW_px = skidW_px + 36;
-    const isRunwaySheet = activeSetup >= 3 && L >= 1500;
+    const isRunwaySheet = allowRunwayTracks && L >= 1500;
 
     if (isRunwaySheet) {
       ctx.fillRect(skidX - 18, (skidY + edgePadY) - trackH_px / 2, trackW_px, trackH_px);
@@ -377,35 +357,35 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
       ctx.strokeRect(skidX - 18, (skidY + skidH_px - edgePadY) - trackH_px / 2, trackW_px, trackH_px);
 
       const padW = Math.max(44, Math.min(80, (L / (platLength * 1000)) * 110));
-      skates.filter((s) => Math.abs(s.y - cy) < 2).forEach((s) => {
+      units.filter((s) => Math.abs(s.y - cy) < 2).forEach((s) => {
         ctx.fillRect(s.x - padW / 2, cy - trackH_px / 2, padW, trackH_px);
         ctx.strokeRect(s.x - padW / 2, cy - trackH_px / 2, padW, trackH_px);
       });
     } else {
       const padW = Math.max(38, Math.min(110, (L / (platLength * 1000)) * skidW_px));
-      skates.forEach((sk) => {
+      units.forEach((sk) => {
         ctx.fillRect(sk.x - padW / 2, sk.y - trackH_px / 2, padW, trackH_px);
         ctx.strokeRect(sk.x - padW / 2, sk.y - trackH_px / 2, padW, trackH_px);
       });
     }
   }
 
-  const skateW = 32;
-  const skateH = 20;
+  const boxW = 32;
+  const boxH = 20;
 
-  skates.forEach((sk, idx) => {
-    ctx.fillStyle = sk.isPowered ? '#0284c7' : (isDark ? '#15803d' : '#16a34a');
-    ctx.fillRect(sk.x - skateW / 2, sk.y - skateH / 2, skateW, skateH);
-    ctx.strokeStyle = sk.isPowered ? '#38bdf8' : (isDark ? '#4ade80' : '#22c55e');
+  units.forEach((sk, idx) => {
+    ctx.fillStyle = sk.color || (sk.isPowered ? '#0284c7' : (isDark ? '#15803d' : '#16a34a'));
+    ctx.fillRect(sk.x - boxW / 2, sk.y - boxH / 2, boxW, boxH);
+    ctx.strokeStyle = sk.stroke || (sk.isPowered ? '#38bdf8' : (isDark ? '#4ade80' : '#22c55e'));
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(sk.x - skateW / 2, sk.y - skateH / 2, skateW, skateH);
+    ctx.strokeRect(sk.x - boxW / 2, sk.y - boxH / 2, boxW, boxH);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 9px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(sk.id, sk.x, sk.y + 3);
 
-    const isPeakHighlight = (activeSetup === 1 && idx === 0) || (activeSetup > 1 && idx === 2);
+    const isPeakHighlight = idx === peakIndex;
     const loadStr = isPeakHighlight ? `Peak: ${peakLoad.toFixed(1)} kN` : `${nomLoad.toFixed(1)} kN`;
 
     ctx.save();
@@ -419,16 +399,16 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
 
     if (isLeftEdge) {
       align = 'left';
-      textX = sk.x + skateW / 2 + 8;
+      textX = sk.x + boxW / 2 + 8;
       pillX = textX - 4;
     } else if (isRightEdge) {
       align = 'right';
-      textX = sk.x - skateW / 2 - 8;
+      textX = sk.x - boxW / 2 - 8;
       pillX = textX - txtW - 4;
     } else {
       align = 'center';
       textX = sk.x;
-      textY = sk.y < cy ? (sk.y + skateH / 2 + 14) : (sk.y - skateH / 2 - 6);
+      textY = sk.y < cy ? (sk.y + boxH / 2 + 14) : (sk.y - boxH / 2 - 6);
       pillX = textX - txtW / 2 - 4;
     }
 
@@ -444,7 +424,105 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
   ctx.font = '10.5px sans-serif';
   ctx.textAlign = 'left';
   const legY = skidY + skidH_px + 24;
-  ctx.fillText(`■ Blue: ${poweredName.split('(')[0].trim()}`, skidX, legY);
-  ctx.fillText('■ Green: Followers', skidX + 180, legY);
-  if (plateOn) ctx.fillText('■ Purple: Spreader Plates', skidX + 330, legY);
+  legendItems.forEach((item, i) => {
+    ctx.fillText(item, skidX + i * 185, legY);
+  });
+}
+
+// Mode order: 1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point
+export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad, peakLoad, plateOn, B, L, poweredName, isDark = true) {
+  const legendItems = [
+    `■ Blue: ${poweredName.split('(')[0].trim()}`,
+    '■ Green: Followers'
+  ];
+  if (plateOn) legendItems.push('■ Purple: Spreader Plates');
+
+  renderPlanCanvas(canvas, {
+    platLength, platWidth, nomLoad, peakLoad,
+    peakIndex: activeSetup === 1 ? 0 : 2,
+    plateOn, B, L,
+    allowRunwayTracks: activeSetup >= 3,
+    legendItems,
+    isDark,
+    buildUnits: ({ skidX, skidY, skidW_px, skidH_px, cx, cy, edgePadX, edgePadY }) => {
+      const skates = [];
+      if (activeSetup === 1) {
+        skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
+      } else if (activeSetup === 2) {
+        skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'F1', x: cx, y: skidY + edgePadY, isPowered: false });
+        skates.push({ id: 'F2', x: cx, y: skidY + skidH_px - edgePadY, isPowered: false });
+      } else if (activeSetup === 3) {
+        skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'C1', x: skidX + edgePadX, y: skidY + edgePadY, isPowered: false });
+        skates.push({ id: 'C2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
+        skates.push({ id: 'C3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
+        skates.push({ id: 'C4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
+      } else if (activeSetup === 4) {
+        skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'S1', x: skidX + edgePadX, y: skidY + edgePadY, isPowered: false });
+        skates.push({ id: 'S2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
+        skates.push({ id: 'M1', x: cx, y: skidY + edgePadY, isPowered: false });
+        skates.push({ id: 'M2', x: cx, y: skidY + skidH_px - edgePadY, isPowered: false });
+        skates.push({ id: 'S3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, isPowered: false });
+        skates.push({ id: 'S4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, isPowered: false });
+      } else {
+        skates.push({ id: 'P1', x: skidX + edgePadX, y: cy, isPowered: true });
+        skates.push({ id: 'P2', x: skidX + skidW_px - edgePadX, y: cy, isPowered: true });
+        const spanX = skidW_px - 2 * edgePadX - 40;
+        const startRailX = skidX + edgePadX + 20;
+        for (let i = 0; i < 4; i++) {
+          const px = startRailX + (i * spanX) / 3;
+          skates.push({ id: `F${i * 2 + 1}`, x: px, y: skidY + edgePadY, isPowered: false });
+          skates.push({ id: `F${i * 2 + 2}`, x: px, y: skidY + skidH_px - edgePadY, isPowered: false });
+        }
+      }
+      return skates;
+    }
+  });
+}
+
+export function drawCasterTopPlan(canvas, numCasters, wheelsPerCaster, platLength, platWidth, nomLoad, peakLoad, plateOn, B, L, isDark = true) {
+  const wheelLabel = wheelsPerCaster === 2 ? 'Twin-Wheel Casters' : 'Single-Wheel Casters';
+  const legendItems = [`■ Amber: ${numCasters}× ${wheelLabel}`];
+  if (plateOn) legendItems.push('■ Purple: Spreader Plates');
+
+  renderPlanCanvas(canvas, {
+    platLength, platWidth, nomLoad, peakLoad,
+    peakIndex: 0,
+    plateOn, B, L,
+    allowRunwayTracks: numCasters >= 6,
+    legendItems,
+    isDark,
+    buildUnits: ({ skidX, skidY, skidW_px, skidH_px, cx, edgePadX, edgePadY }) => {
+      const casters = [];
+      const color = isDark ? '#d97706' : '#f59e0b';
+      const stroke = '#fbbf24';
+      if (numCasters === 4) {
+        casters.push({ id: 'C1', x: skidX + edgePadX, y: skidY + edgePadY, color, stroke });
+        casters.push({ id: 'C2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, color, stroke });
+        casters.push({ id: 'C3', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, color, stroke });
+        casters.push({ id: 'C4', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, color, stroke });
+      } else if (numCasters === 6) {
+        casters.push({ id: 'C1', x: skidX + edgePadX, y: skidY + edgePadY, color, stroke });
+        casters.push({ id: 'C2', x: skidX + edgePadX, y: skidY + skidH_px - edgePadY, color, stroke });
+        casters.push({ id: 'C3', x: cx, y: skidY + edgePadY, color, stroke });
+        casters.push({ id: 'C4', x: cx, y: skidY + skidH_px - edgePadY, color, stroke });
+        casters.push({ id: 'C5', x: skidX + skidW_px - edgePadX, y: skidY + edgePadY, color, stroke });
+        casters.push({ id: 'C6', x: skidX + skidW_px - edgePadX, y: skidY + skidH_px - edgePadY, color, stroke });
+      } else {
+        const spanX = skidW_px - 2 * edgePadX;
+        for (let i = 0; i < 4; i++) {
+          const px = skidX + edgePadX + (i * spanX) / 3;
+          casters.push({ id: `C${i * 2 + 1}`, x: px, y: skidY + edgePadY, color, stroke });
+          casters.push({ id: `C${i * 2 + 2}`, x: px, y: skidY + skidH_px - edgePadY, color, stroke });
+        }
+      }
+      return casters;
+    }
+  });
 }
