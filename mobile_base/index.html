@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Floor Loading Assessment — Mobile Base (Casters)</title>
+  <meta name="description" content="Floor loading assessment simulator for heavy-duty wheeled Mobile Base with casters.">
+  <meta name="theme-color" content="#0b1120">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='.9em' font-size='70' x='15'>⚙️</text></svg>">
+  <link rel="stylesheet" href="/style.css?v=10">
+</head>
+<body>
+
+<header class="header">
+  <div>
+    <h1>Floor Loading Assessment (Mobile Base)</h1>
+    <p id="lblHeaderSub">Floor Load Rating: 7.50 kN/m²</p>
+  </div>
+  <div class="header-actions">
+    <nav class="nav-pills" aria-label="Setup Selector">
+      <a class="nav-pill" href="/">Home</a>
+      <a class="nav-pill" href="/amr/">AMR / Skate</a>
+      <a class="nav-pill active" href="/mobile_base/">Mobile Base</a>
+    </nav>
+    <button id="btnThemeToggle" class="btn-theme-toggle" type="button" aria-label="Toggle Light / Dark Mode">☀️ Light Mode</button>
+    <button onclick="window.print()" class="btn-action" aria-label="Export PDF">🖨️ Export PDF</button>
+  </div>
+</header>
+
+<main class="app-container">
+  <!-- LEFT: CONTROLS -->
+  <section class="controls-col" aria-label="Controls">
+
+    <!-- 1. MOBILE BASE & CASTER LAYOUT -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>1. Mobile Base Setup</span>
+        <span style="font-size:10px; color:var(--accent);" id="lblSetupSummary">6-Caster</span>
+      </div>
+      <div class="setup-toggle" style="grid-template-columns: repeat(3, 1fr);" role="tablist" aria-label="Caster Count">
+        <button class="setup-btn" id="btnCaster4" role="tab" aria-selected="false">4-Caster</button>
+        <button class="setup-btn active" id="btnCaster6" role="tab" aria-selected="true">6-Caster</button>
+        <button class="setup-btn" id="btnCaster8" role="tab" aria-selected="false">8-Caster</button>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <span class="label-wrap">Mobile Base Frame (L × W, m)</span>
+        <div class="input-row-2">
+          <div><input type="number" id="inputPlatL" min="1.0" max="10.0" step="0.1" value="3.80" aria-label="Base Length (m)"></div>
+          <div><input type="number" id="inputPlatW" min="1.0" max="5.0" step="0.1" value="2.40" aria-label="Base Width (m)"></div>
+        </div>
+        <div class="btn-group" id="btnGroupPlatform">
+          <button class="btn-preset active" data-l="3.80" data-w="2.40">3.80×2.40</button>
+          <button class="btn-preset" data-l="3.80" data-w="2.20">3.80×2.20</button>
+          <button class="btn-preset" data-l="7.30" data-w="2.34">7.30×2.34</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <span class="label-wrap">Dynamic Factor (Φ) — Towed Casters</span>
+        <div class="btn-group" id="btnGroupPhi">
+          <button class="btn-preset" data-phi="1.25">1.25 (Smooth)</button>
+          <button class="btn-preset active" data-phi="1.30">1.30 (Sill/Joint)</button>
+          <button class="btn-preset" data-phi="1.40">1.40 (Rough)</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="label-wrap">
+          <label for="inputCasterBias">Worst-Caster Load Bias</label>
+          <span class="val" id="lblCasterBias">25%</span>
+        </div>
+        <input type="range" id="inputCasterBias" min="12" max="50" step="1" value="25">
+      </div>
+    </div>
+
+    <!-- 2. CASTER WHEEL SPECIFICATIONS -->
+    <div class="panel">
+      <div class="panel-title"><span>2. Caster Wheels</span></div>
+
+      <div class="form-group">
+        <span class="label-wrap">Caster Fork Type</span>
+        <div class="btn-group" id="btnGroupWheelType">
+          <button class="btn-preset" data-wpc="1">Single Wheel (1/fork)</button>
+          <button class="btn-preset active" data-wpc="2">Twin-Wheel (2/fork)</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap" for="selectCasterPreset">Caster Size Preset</label>
+        <select id="selectCasterPreset">
+          <option value="HD-150">Ø150 × 50 mm Heavy Caster (18 kg)</option>
+          <option value="HD-200" selected>Ø200 × 50 mm Heavy Caster (24 kg)</option>
+          <option value="HD-250">Ø250 × 60 mm Super-Heavy Caster (34 kg)</option>
+          <option value="CUSTOM">Custom Caster</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <div class="label-wrap"><label for="inputCasterWeight">Caster Weight (per assembly)</label><span class="val" id="lblCasterWeight">24 kg</span></div>
+        <input type="range" id="inputCasterWeight" min="5" max="80" step="1" value="24">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><label for="inputCasterDia">Wheel Diameter (D)</label><span class="val" id="lblCasterDia">200 mm</span></div>
+        <input type="range" id="inputCasterDia" min="100" max="300" step="10" value="200">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><label for="inputCasterWidth">Single Wheel Tread Width (Lw)</label><span class="val" id="lblCasterWidth">50 mm</span></div>
+        <input type="range" id="inputCasterWidth" min="30" max="120" step="5" value="50">
+      </div>
+      <div class="form-group">
+        <label class="label-wrap" for="selectCasterMat">Wheel Material</label>
+        <select id="selectCasterMat">
+          <option value="pu" selected>Polyurethane / Vulkollan (PU)</option>
+          <option value="nylon">Nylon PA6</option>
+          <option value="steel">Cast Steel / Iron</option>
+        </select>
+      </div>
+      <div class="form-group" id="shoreAGroup">
+        <div class="label-wrap"><label for="inputShoreA">PU Shore A</label><span class="val" id="lblShoreA">95 A</span></div>
+        <input type="range" id="inputShoreA" min="80" max="98" step="1" value="95">
+      </div>
+    </div>
+
+    <!-- 3. SYSTEM MASS -->
+    <div class="panel">
+      <div class="panel-title"><span>3. System Mass</span></div>
+      <div class="form-group">
+        <div class="label-wrap"><label for="inputPnmMass">Payload</label><span class="val" id="lblPnmMass">6,000 kg</span></div>
+        <input type="range" id="inputPnmMass" min="3000" max="10000" step="250" value="6000">
+      </div>
+      <div class="form-group">
+        <div class="label-wrap"><label for="inputFrameMass">Mobile Base Frame</label><span class="val" id="lblFrameMass">700 kg</span></div>
+        <input type="range" id="inputFrameMass" min="200" max="3000" step="50" value="700">
+      </div>
+
+      <div class="sub-box sub-box-highlight">
+        <div class="sub-box-row">
+          <span>Caster Weight:</span>
+          <strong id="lblCasterMassSum">24 kg/ea · 144 kg</strong>
+        </div>
+        <div class="sub-box-row">
+          <span>Total Wheels:</span>
+          <strong id="lblTotalWheelsSum">12 (Twin)</strong>
+        </div>
+        <div class="sub-box-divider">
+          <div class="sub-box-row">
+            <span>Gross Total:</span>
+            <strong id="lblTotalGrossMass">6,844 kg</strong>
+          </div>
+          <div class="sub-box-row">
+            <span>Gravity Weight:</span>
+            <strong id="lblTotalGrossWeight" class="val-accent">67.14 kN</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. SPREADER PLATES -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>4. Spreader Plates (Optional)</span>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; text-transform:none; font-size:11px;">
+          <input type="checkbox" id="checkPlateEnable" style="accent-color:var(--accent); cursor:pointer;">
+          <strong style="color:var(--text-primary);">Enable</strong>
+        </label>
+      </div>
+
+      <div id="plateControls" style="display:none;">
+        <div class="form-group">
+          <label class="label-wrap" for="selectPlateSteel">Plate Material</label>
+          <select id="selectPlateSteel">
+            <option value="ss400" selected>SS400 / S275JR Mild Steel (fy 275 MPa)</option>
+            <option value="s355">S355J2 / A572-50 High-Strength Steel (fy 355 MPa)</option>
+            <option value="strenx700">Strenx 700 Structural Steel (fy 700 MPa)</option>
+            <option value="hardox450">Hardox 450 Abrasion-Resistant Steel (fy 1,200 MPa)</option>
+            <option value="al6061">Aluminum 6061-T6 Alloy (fy 276 MPa)</option>
+            <option value="al7075">Aluminum 7075-T6 Aerospace Alloy (fy 505 MPa)</option>
+            <option value="cfrp">Carbon Fiber Composite CFRP (fy 600 MPa)</option>
+            <option value="g10">G10 / FR-4 Fiberglass Epoxy (fy 340 MPa)</option>
+            <option value="uhmwpe">UHMWPE Polymer Sheet (fy 25 MPa)</option>
+            <option value="plywood">Phenolic Birch Plywood (fy 35 MPa)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <span class="label-wrap">Sheet Preset</span>
+          <div class="btn-group" id="btnGroupPlates" style="flex-wrap: wrap;">
+            <button class="btn-preset" data-w="300" data-l="300">300×300</button>
+            <button class="btn-preset active" data-w="610" data-l="2440">610×2440</button>
+            <button class="btn-preset" data-w="1220" data-l="2440">1220×2440</button>
+            <button class="btn-preset" data-w="1000" data-l="2000">1000×2000</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="label-wrap"><label for="inputPlateWidth">Width (W)</label><span class="val" id="lblPlateWidth">610 mm</span></div>
+          <input type="range" id="inputPlateWidth" min="250" max="1500" step="25" value="610">
+        </div>
+        <div class="form-group">
+          <div class="label-wrap"><label for="inputPlateLength">Length (L)</label><span class="val" id="lblPlateLength">2,440 mm</span></div>
+          <input type="range" id="inputPlateLength" min="300" max="3000" step="50" value="2440">
+        </div>
+        <div class="form-group">
+          <div class="label-wrap"><label for="inputPlateThick">Thickness (t)</label><span class="val" id="lblPlateThick">10 mm</span></div>
+          <input type="range" id="inputPlateThick" min="2" max="60" step="1" value="10">
+        </div>
+
+        <div class="sub-box sub-box-highlight">
+          <div class="sub-box-row">
+            <span>Min Width (2h):</span>
+            <strong id="lblRecWidth" class="val-accent">—</strong>
+          </div>
+          <div class="sub-box-row">
+            <span>Min Thickness (t_req):</span>
+            <strong id="lblRecThick" class="val-warn">—</strong>
+          </div>
+          <div class="sub-box-divider">
+            <div class="sub-box-row">
+              <span>Sheet Mass:</span>
+              <strong id="lblPlateHandlingWeight">—</strong>
+            </div>
+            <div id="lblHandlingBadge" style="font-size:10.5px; margin-top:2px;">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. BUILDING SPEC -->
+    <div class="panel">
+      <div class="panel-title"><span>5. Building Spec</span></div>
+
+      <div class="form-group">
+        <div class="label-wrap"><label for="inputUdlLimit">UDL / Floor Load Rating (kN/m²)</label><span class="val">Confirmed</span></div>
+        <input type="number" id="inputUdlLimit" min="0.5" max="30" step="0.1" value="7.5">
+      </div>
+
+      <div class="form-group">
+        <span class="label-wrap">Design Code</span>
+        <div class="btn-group" id="btnGroupCode">
+          <button class="btn-preset active" data-code="BS8110">BS 8110-1 (1.5d)</button>
+          <button class="btn-preset" data-code="EC2">Eurocode 2 (2.0d)</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap" for="selectConcreteGrade">Concrete Grade</label>
+        <select id="selectConcreteGrade">
+          <option value="" selected>Pending input</option>
+          <option value="C20/25">C20/25 (f_cu = 25 MPa)</option>
+          <option value="C25/30">C25/30 (f_cu = 30 MPa)</option>
+          <option value="C30/37">C30/37 (f_cu = 37 MPa)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap" for="inputSlabDepth">Slab Thickness h (mm)</label>
+        <input type="number" id="inputSlabDepth" min="80" max="500" step="5" placeholder="Pending input">
+        <div class="btn-group" id="btnGroupSlab">
+          <button class="btn-preset" data-h="150">150</button>
+          <button class="btn-preset" data-h="175">175</button>
+          <button class="btn-preset" data-h="200">200</button>
+          <button class="btn-preset" data-h="">Clear</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap" for="inputRhoL">Rebar Ratio ρ_l (%)</label>
+        <input type="number" id="inputRhoL" min="0.1" max="3.0" step="0.01" placeholder="Pending input">
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap" for="inputSpanL">Beam / Slab Span L (m)</label>
+        <input type="number" id="inputSpanL" min="1.0" max="15.0" step="0.1" placeholder="Pending input">
+        <div class="btn-group" id="btnGroupSpan">
+          <button class="btn-preset" data-span="3.0">3.0 m</button>
+          <button class="btn-preset" data-span="4.0">4.0 m</button>
+          <button class="btn-preset" data-span="6.0">6.0 m</button>
+          <button class="btn-preset" data-span="">Clear</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label-wrap" for="inputFloorStress">Surface Limit P_allow (MPa)</label>
+        <input type="number" id="inputFloorStress" min="1" max="50" step="0.5" placeholder="Pending input">
+        <div class="btn-group" id="btnGroupStress">
+          <button class="btn-preset" data-stress="10">10</button>
+          <button class="btn-preset" data-stress="12">12</button>
+          <button class="btn-preset" data-stress="15">15</button>
+          <button class="btn-preset" data-stress="">Clear</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- RIGHT: RESULTS & VISUALIZATIONS -->
+  <section class="visuals-col" aria-label="Results">
+
+    <!-- 8 METRIC CARDS -->
+    <div class="dashboard-grid" role="region" aria-label="Structural Metrics">
+      <div class="dash-card card-info" id="cardCasterLoad">
+        <div class="meta"><span>1. CASTER LOAD</span><span>Static / Peak</span></div>
+        <div class="main-val" id="valCasterLoad">—</div>
+        <div class="sub" id="subCasterLoad">—</div>
+        <div class="status-badge status-info" id="badgeCasterLoad">IMPOSED</div>
+      </div>
+
+      <div class="dash-card card-info" id="cardWheelLoad">
+        <div class="meta"><span>2. CASTER WHEEL</span><span>Static / Peak</span></div>
+        <div class="main-val" id="valWheelLoad">—</div>
+        <div class="sub" id="subWheelLoad">—</div>
+        <div class="status-badge status-info" id="badgeWheelLoad">IMPOSED</div>
+      </div>
+
+      <div class="dash-card" id="cardPressure">
+        <div class="meta"><span>3. SURFACE PRESSURE</span><span>Floor Contact</span></div>
+        <div class="main-val" id="valPressure">—</div>
+        <div class="sub" id="subPressure">—</div>
+        <div class="status-badge status-info" id="badgePressure">PENDING</div>
+      </div>
+
+      <div class="dash-card" id="cardPunch">
+        <div class="meta"><span>4. PUNCHING SHEAR</span><span id="tagPunchCode">BS 8110</span></div>
+        <div class="main-val" id="valPunch">—</div>
+        <div class="sub" id="subPunch">—</div>
+        <div class="status-badge status-info" id="badgePunch">PENDING</div>
+      </div>
+
+      <div class="dash-card" id="cardBending">
+        <div class="meta"><span>5. SLAB BENDING</span><span>Span Check</span></div>
+        <div class="main-val" id="valBending">—</div>
+        <div class="sub" id="subBending">—</div>
+        <div class="status-badge status-info" id="badgeBending">PENDING</div>
+      </div>
+
+      <div class="dash-card" id="cardUdl">
+        <div class="meta"><span>6. FLOOR UDL</span><span id="tagUdlArea">9.12 m²</span></div>
+        <div class="main-val" id="valUdl">—</div>
+        <div class="sub" id="subUdl">Rating: 7.50 kN/m²</div>
+        <div class="status-badge status-info" id="badgeUdl">—</div>
+      </div>
+
+      <div class="dash-card" id="cardRigidity">
+        <div class="meta"><span>7. SPREADER PLATE</span><span>Plate Stiffness</span></div>
+        <div class="main-val" id="valRigidity">—</div>
+        <div class="sub" id="subRigidity">—</div>
+        <div class="status-badge status-info" id="badgeRigidity">—</div>
+      </div>
+
+      <div class="dash-card" id="cardVerdict">
+        <div class="meta"><span>8. OVERALL RESULT</span><span>Pass / Fail</span></div>
+        <div class="main-val" id="valVerdict">—</div>
+        <div class="sub" id="subVerdict">—</div>
+        <div class="status-badge status-info" id="badgeVerdict">—</div>
+      </div>
+    </div>
+
+    <!-- LOAD TREE -->
+    <div class="tree-container" role="region" aria-label="Load Breakdown">
+      <div class="tree-title">
+        <span>Load Breakdown</span>
+        <span style="color:var(--text-secondary); font-size:11px;" id="lblTreeModeTag">6-CASTER MOBILE BASE</span>
+      </div>
+      <div class="tree-node-root">
+        <span style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; font-weight:700;">Gross Load</span>
+        <div style="font-size:16px; font-weight:800; color:var(--accent);" id="treeRootVal">—</div>
+      </div>
+      <div class="tree-branches" id="treeBranchWrap"></div>
+    </div>
+
+    <!-- CANVASES -->
+    <div class="canvas-panel" role="region" aria-label="Diagrams">
+      <div>
+        <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between;">
+          <span>SIDE VIEW: Governing Caster, Plate &amp; Shear Cone</span>
+          <span style="color:var(--accent); font-size:11px;" id="lblFrontElevationSub">—</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="frontCanvas" width="940" height="340"></canvas>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px; font-weight:700; color:var(--text-primary); margin-bottom:6px; display:flex; justify-content:space-between;">
+          <span id="lblTopPlanTitle">TOP PLAN</span>
+          <span style="color:var(--accent); font-size:11px;" id="lblTopPlanSub">—</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="topCanvas" width="940" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULAS & STANDARDS DRAWER -->
+    <details class="assumptions-box">
+      <summary>Calculation Formulas &amp; Standard References</summary>
+      <div class="formula-grid">
+        <article class="formula-block">
+          <div class="formula-head">
+            <strong>1. Mobile Base Mass, UDL &amp; Caster Bias</strong>
+            <span class="std-ref">EN 1991-1-1 §6.3 · EN 1991-3 / ASCE 7 · TR34</span>
+          </div>
+          <p class="formula-prose">
+            Towed wheeled mobile bases traverse lift sills and floor joints faster than creeping skates, requiring a higher dynamic factor (&Phi; = 1.25–1.40). Twin-wheel casters halve Mode 1 surface load per wheel while sharing one Mode 2 fork footprint.
+          </p>
+          <div class="eq-card">
+            <div class="eq-row">
+              <span class="math"><i>M</i><sub>gross</sub> = <i>m</i><sub>pay</sub> + <i>m</i><sub>frame</sub> + <i>N</i><sub>c</sub><i>m</i><sub>caster</sub>, &nbsp; UDL = <span class="frac"><span class="num"><i>W</i><sub>gross</sub></span><span class="den"><i>L</i><sub>base</sub><i>W</i><sub>base</sub></span></span></span>
+              <span class="eq-num">(1.1)</span>
+            </div>
+            <div class="eq-row">
+              <span class="math"><i>F</i><sub>caster,peak</sub> = <i>W</i><sub>gross</sub> &middot; max(<span class="frac"><span class="num">1</span><span class="den"><i>N</i><sub>c</sub></span></span>, Bias) &middot; &Phi;, &nbsp; <i>F</i><sub>wheel,peak</sub> = <span class="frac"><span class="num"><i>F</i><sub>caster,peak</sub></span><span class="den"><i>w</i><sub>caster</sub></span></span></span>
+              <span class="eq-num">(1.2)</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="formula-block">
+          <div class="formula-head">
+            <strong>2. Mode 1 — Surface Contact Stress</strong>
+            <span class="std-ref">Hertz Line Contact · Gent (1958) · BS 8110-1 Cl. 5.2.3.4</span>
+          </div>
+          <p class="formula-prose">
+            Elastomeric wheel flattening is computed from Shore A hardness via Gent&rsquo;s equation and Hertzian line contact; peak contact stress is 27.3% above mean pressure.
+          </p>
+          <div class="eq-card">
+            <div class="eq-row">
+              <span class="math"><i>b</i> = <span class="radic">&radic;<span class="rad-over"><span class="frac"><span class="num">4 <i>F R</i></span><span class="den">&pi; <i>L</i><sub>w</sub> <i>E</i>*</span></span></span></span>, &nbsp; <i>p</i><sub>max</sub> = 1.273 <span class="frac"><span class="num"><i>F</i></span><span class="den">2<i>b L</i><sub>w</sub></span></span> &le; min(<i>P</i><sub>allow</sub>, 0.4<i>f</i><sub>cu</sub>)</span>
+              <span class="eq-num">(2.1)</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="formula-block">
+          <div class="formula-head">
+            <strong>3. Mode 2 — Slab Punching Shear</strong>
+            <span class="std-ref">BS 8110-1:1997 Cl. 3.7.7 · EN 1992-1-1 Cl. 6.4</span>
+          </div>
+          <p class="formula-prose">
+            Checks diagonal slab shear through depth <i>d</i> under ULS load &gamma;&middot;<i>F</i><sub>caster,peak</sub> at the combined caster fork perimeter <i>u</i><sub>0</sub> and outer control perimeter <i>u</i><sub>1</sub>.
+          </p>
+          <div class="eq-card">
+            <div class="eq-row">
+              <span class="math"><i>V</i><sub>Ed</sub> = &gamma; &middot; <i>F</i><sub>caster,peak</sub>, &nbsp; <i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 12<i>d</i> <small class="eq-note">(BS 8110)</small> &nbsp;|&nbsp; <i>u</i><sub>0</sub> + 4&pi;<i>d</i> <small class="eq-note">(EC2)</small></span>
+              <span class="eq-num">(3.1)</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="formula-block">
+          <div class="formula-head">
+            <strong>4. Mode 3 — Slab Bending &amp; Plate Rigidity</strong>
+            <span class="std-ref">BS 8110-1 Cl. 3.5.2.2 · Method B · AISC Design Guide 1</span>
+          </div>
+          <p class="formula-prose">
+            Sweeps all caster axle positions across span <i>L</i> using Method B and divides peak moment by effective strip width <i>b</i><sub>e</sub> against the UDL rating benchmark <i>q</i><sub>rating</sub><i>L</i><sup>2</sup>/8.
+          </p>
+          <div class="eq-card">
+            <div class="eq-row">
+              <span class="math"><i>M</i><sub>imp</sub> = <span class="frac"><span class="num"><i>M</i><sub>max</sub></span><span class="den"><i>b</i><sub>e</sub></span></span> &le; <span class="frac"><span class="num"><i>q</i><sub>rating</sub><i>L</i><sup>2</sup></span><span class="den">8</span></span>, &nbsp; <i>t</i><sub>req</sub> = <i>c</i><span class="radic">&radic;<span class="rad-over"><span class="frac"><span class="num">3<i>p</i></span><span class="den">&sigma;<sub>allow</sub></span></span></span></span></span>
+              <span class="eq-num">(4.1)</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </details>
+
+  </section>
+</main>
+
+<script type="module" src="/js/mobile_base.js?v=10"></script>
+</body>
+</html>

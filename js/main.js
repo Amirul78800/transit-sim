@@ -1,10 +1,14 @@
-import { CATALOG_MODELS, CONFIRMED_UDL_KPA } from './data.js?v=9';
-import { runPhysicsCalculations } from './physics.js?v=9';
-import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js?v=9';
+import { CATALOG_MODELS } from './data.js?v=10';
+import { runPhysicsCalculations } from './physics.js?v=10';
+import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js?v=10';
+import {
+  optNum, initTheme, bindPresetGroup, setCardStatus,
+  readSharedSlabInputs, updateSharedSlabOutputs
+} from './ui_common.js?v=10';
 
 let activeSetup = 4; // 1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point
 let designCode = 'BS8110';
-let currentTheme = 'dark';
+let getTheme = () => 'dark';
 let cachedInputs = null;
 let cachedResults = null;
 
@@ -120,47 +124,6 @@ const dom = {
   topCanvas: document.getElementById('topCanvas')
 };
 
-const optNum = (el) => {
-  const v = parseFloat(el.value);
-  return Number.isFinite(v) && v > 0 ? v : null;
-};
-
-function initTheme() {
-  const saved = localStorage.getItem('transit_sim_theme');
-  if (saved) currentTheme = saved;
-  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) currentTheme = 'light';
-  applyTheme(currentTheme);
-}
-
-function toggleTheme() {
-  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('transit_sim_theme', currentTheme);
-  applyTheme(currentTheme);
-  update();
-}
-
-function applyTheme(theme) {
-  if (theme === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light');
-    dom.btnThemeToggle.innerHTML = '🌙 Dark Mode';
-  } else {
-    document.documentElement.removeAttribute('data-theme');
-    dom.btnThemeToggle.innerHTML = '☀️ Light Mode';
-  }
-}
-
-function bindGroup(selector, callback) {
-  const buttons = document.querySelectorAll(`${selector} .btn-preset`);
-  buttons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      buttons.forEach((b) => b.classList.remove('active'));
-      if (btn.innerText.trim().toLowerCase() !== 'clear') btn.classList.add('active');
-      callback(btn);
-      update();
-    });
-  });
-}
-
 function syncFollowerCatalogInputs(modelKey) {
   const spec = CATALOG_MODELS[modelKey];
   if (spec) {
@@ -172,8 +135,6 @@ function syncFollowerCatalogInputs(modelKey) {
 }
 
 function bindEvents() {
-  dom.btnThemeToggle.addEventListener('click', toggleTheme);
-
   dom.selectFollowerModel.addEventListener('change', () => {
     syncFollowerCatalogInputs(dom.selectFollowerModel.value);
     update();
@@ -208,27 +169,27 @@ function bindEvents() {
     update();
   }));
 
-  bindGroup('#btnGroupPlatform', (btn) => {
+  bindPresetGroup('#btnGroupPlatform', (btn) => {
     dom.inputPlatL.value = btn.getAttribute('data-l');
     dom.inputPlatW.value = btn.getAttribute('data-w');
+    update();
   });
-
-  bindGroup('#btnGroupPlates', (btn) => {
+  bindPresetGroup('#btnGroupPlates', (btn) => {
     dom.inputPlateWidth.value = btn.getAttribute('data-w');
     dom.inputPlateLength.value = btn.getAttribute('data-l');
+    update();
   });
-
-  bindGroup('#btnGroupCode', (btn) => { designCode = btn.getAttribute('data-code'); });
-  bindGroup('#btnGroupSlab', (btn) => { dom.inputSlabDepth.value = btn.getAttribute('data-h'); });
-  bindGroup('#btnGroupSpan', (btn) => { dom.inputSpanL.value = btn.getAttribute('data-span'); });
-  bindGroup('#btnGroupStress', (btn) => { dom.inputFloorStress.value = btn.getAttribute('data-stress'); });
+  bindPresetGroup('#btnGroupCode', (btn) => { designCode = btn.getAttribute('data-code'); update(); });
+  bindPresetGroup('#btnGroupSlab', (btn) => { dom.inputSlabDepth.value = btn.getAttribute('data-h'); update(); });
+  bindPresetGroup('#btnGroupSpan', (btn) => { dom.inputSpanL.value = btn.getAttribute('data-span'); update(); });
+  bindPresetGroup('#btnGroupStress', (btn) => { dom.inputFloorStress.value = btn.getAttribute('data-stress'); update(); });
 
   [1, 2, 3, 4, 5].forEach((m) => {
     document.getElementById(`btnSetup${m}`).addEventListener('click', () => setMode(m));
   });
 
   window.addEventListener('resize', () => requestAnimationFrame(() => {
-    if (cachedInputs && cachedResults) renderCanvases(cachedInputs, cachedResults, currentTheme === 'dark');
+    if (cachedInputs && cachedResults) renderCanvases(cachedInputs, cachedResults, getTheme() === 'dark');
   }));
   window.addEventListener('beforeprint', () => {
     if (cachedInputs && cachedResults) renderCanvases(cachedInputs, cachedResults, false);
@@ -236,7 +197,6 @@ function bindEvents() {
   window.addEventListener('afterprint', update);
 }
 
-// Mode order: 1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point
 function setMode(mode) {
   activeSetup = mode;
   [1, 2, 3, 4, 5].forEach((m) => {
@@ -301,25 +261,13 @@ function renderCanvases(inputs, res, isDark) {
   );
 }
 
-function setCardStatus(card, badge, state, badgeText) {
-  card.className = `dash-card card-${state}`;
-  badge.className = `status-badge status-${state}`;
-  badge.innerText = badgeText;
-}
-
 function update() {
-  const isDark = currentTheme === 'dark';
-  const hSlab = optNum(dom.inputSlabDepth);
-  const rhoPct = optNum(dom.inputRhoL);
-  const spanL = optNum(dom.inputSpanL);
-  const pAllowFloor = optNum(dom.inputFloorStress);
-  const udlLimit = optNum(dom.inputUdlLimit) || CONFIRMED_UDL_KPA;
-  const platL = optNum(dom.inputPlatL) || 3.80;
-  const platW = optNum(dom.inputPlatW) || 2.40;
+  const isDark = getTheme() === 'dark';
+  const shared = readSharedSlabInputs(dom, designCode);
 
   const inputs = {
-    platL,
-    platW,
+    platL: optNum(dom.inputPlatL) || 3.80,
+    platW: optNum(dom.inputPlatW) || 2.40,
     mPnm: parseFloat(dom.inputPnmMass.value),
     mBase: parseFloat(dom.inputBaseMass.value),
     addLoadPerFollower: parseFloat(dom.inputAddLoad.value) || 0,
@@ -332,23 +280,10 @@ function update() {
     matKey: dom.selectFollowerMat.value,
     shoreA: parseFloat(dom.inputShoreA.value),
     skateBiasPct: parseFloat(dom.inputSkateBias.value),
-    plateEnabled: dom.checkPlateEnable.checked,
-    B_plate: parseFloat(dom.inputPlateWidth.value),
-    L_plate: parseFloat(dom.inputPlateLength.value),
-    t_plate: parseFloat(dom.inputPlateThick.value),
-    plateMatKey: dom.selectPlateSteel.value,
-    concreteGradeKey: dom.selectConcreteGrade.value || null,
-    pAllowFloor,
-    hSlab,
-    dSlab: hSlab ? Math.max(20, hSlab - 30) : null,
-    rhoL: rhoPct ? rhoPct / 100.0 : null,
-    designCode,
-    spanL,
-    udlLimit_kPa: udlLimit,
+    ...shared,
     activeSetup
   };
 
-  dom.lblHeaderSub.innerText = `Floor Load Rating: ${udlLimit.toFixed(2)} kN/m²`;
   dom.lblSkateBias.innerText = `${inputs.skateBiasPct.toFixed(0)}%`;
   dom.lblFollowerWeight.innerText = `${inputs.followerUnitWeight.toFixed(0)} kg`;
   dom.lblFollowerWheels.innerText = `${inputs.nFollowerWheels}`;
@@ -359,16 +294,11 @@ function update() {
   dom.lblPnmMass.innerText = `${inputs.mPnm.toLocaleString()} kg`;
   dom.lblBaseMass.innerText = `${inputs.mBase.toLocaleString()} kg`;
   dom.lblAddLoad.innerText = `${inputs.addLoadPerFollower.toFixed(0)} kg/ea`;
-  dom.lblPlateWidth.innerText = `${inputs.B_plate} mm`;
-  dom.lblPlateLength.innerText = `${inputs.L_plate.toLocaleString()} mm`;
-  dom.lblPlateThick.innerText = `${inputs.t_plate} mm`;
-  dom.plateControls.style.display = inputs.plateEnabled ? 'block' : 'none';
 
   const res = runPhysicsCalculations(inputs);
   cachedInputs = inputs;
   cachedResults = res;
 
-  // Mass summary
   dom.lblPoweredWeightSum.innerText = `${res.totalPoweredTare.toFixed(0)} kg`;
   dom.lblFollowerWeightSum.innerText = res.numFollowers > 0
     ? `${res.unitFollowerMass.toFixed(0)} kg/ea · ${res.totalFollowerTare.toFixed(0)} kg`
@@ -379,32 +309,15 @@ function update() {
   dom.lblTotalGrossMass.innerText = `${res.grossMass.toLocaleString('en-US', { maximumFractionDigits: 0 })} kg`;
   dom.lblTotalGrossWeight.innerText = `${res.grossWeight_kN.toFixed(2)} kN`;
 
-  // Spreader Plate sidebar summary
-  dom.lblRecWidth.innerText = res.B_code_min ? `${res.B_code_min.toFixed(0)} mm` : 'Pending h';
-  dom.lblRecThick.innerText = `${res.t_req.toFixed(1)} mm`;
-  dom.lblPlateHandlingWeight.innerText = `${res.singlePlateMass.toFixed(1)} kg`;
-  if (res.singlePlateMass <= 20) {
-    dom.lblHandlingBadge.innerText = '1-Man Carry';
-    dom.lblHandlingBadge.style.color = 'var(--pass)';
-  } else if (res.singlePlateMass <= 45) {
-    dom.lblHandlingBadge.innerText = '2-Man Lift';
-    dom.lblHandlingBadge.style.color = 'var(--warn)';
-  } else {
-    dom.lblHandlingBadge.innerText = 'Forklift Required';
-    dom.lblHandlingBadge.style.color = 'var(--fail)';
-  }
-
-  // Card 1: Skate Load (Static & Peak)
+  // Cards 1–3
   dom.valSkateLoad.innerText = `${res.peakSkateLoad_kN.toFixed(2)} kN`;
   dom.subSkateLoad.innerText = `Static: ${res.nominalSkateLoad_kN.toFixed(2)} kN | Peak: ${res.peakSkateLoad_kN.toFixed(2)} kN`;
   setCardStatus(dom.cardSkateLoad, dom.badgeSkateLoad, 'info', `${res.totalSkates} SKATES`);
 
-  // Card 2: Powered Skate Wheel (Static & Peak)
   dom.valPowWheel.innerText = `${res.powEval.peakWheel_kN.toFixed(2)} kN`;
   dom.subPowWheel.innerText = `Static: ${res.powEval.staticWheel_kN.toFixed(2)} kN | Peak: ${res.powEval.peakWheel_kN.toFixed(2)} kN`;
   setCardStatus(dom.cardPowWheel, dom.badgePowWheel, 'info', res.poweredSpec.name.split('(')[0].trim());
 
-  // Card 3: Follower Skate Wheel (Static & Peak)
   if (res.folEval) {
     dom.valFolWheel.innerText = `${res.folEval.peakWheel_kN.toFixed(2)} kN`;
     dom.subFolWheel.innerText = `Static: ${res.folEval.staticWheel_kN.toFixed(2)} kN | Fork Peak: ${res.folEval.peakFork_kN.toFixed(2)} kN`;
@@ -416,112 +329,7 @@ function update() {
     setCardStatus(dom.cardFolWheel, dom.badgeFolWheel, 'info', 'NO FOLLOWERS');
   }
 
-  // Card 4: Mode 1 Surface
-  dom.valPressure.innerText = `${res.contactPressure_max_MPa.toFixed(2)} MPa`;
-  if (res.mode1Limit_MPa !== null) {
-    dom.subPressure.innerText = `p_mean: ${res.contactPressure_mean_MPa.toFixed(2)} | Limit: ${res.mode1Limit_MPa.toFixed(1)} MPa`;
-    setCardStatus(dom.cardPressure, dom.badgePressure, res.isMode1Pass ? 'pass' : 'fail', res.isMode1Pass ? 'PASS' : 'FAIL');
-  } else {
-    dom.subPressure.innerText = `p_mean: ${res.contactPressure_mean_MPa.toFixed(2)} MPa | Limit: —`;
-    setCardStatus(dom.cardPressure, dom.badgePressure, 'info', 'PENDING LIMIT');
-  }
-
-  // Card 5: Mode 2 Shear
-  dom.tagPunchCode.innerText = `${res.punch.code} (${res.punch.perimeterLabel})`;
-  if (!res.hasHSlab) {
-    dom.valPunch.innerText = '—';
-    dom.subPunch.innerText = 'Enter slab h to compute v_Ed';
-    setCardStatus(dom.cardPunch, dom.badgePunch, 'info', 'PENDING h');
-  } else {
-    dom.valPunch.innerText = `${res.punch.v_Ed_1.toFixed(3)} MPa`;
-    if (res.isMode2Pass !== null) {
-      dom.subPunch.innerText = `v_Rd,c: ${res.punch.v_Rd_c.toFixed(3)} | u0: ${res.punch.v_Ed_0.toFixed(2)}/${res.punch.v_Rd_max.toFixed(2)}`;
-      setCardStatus(
-        dom.cardPunch, dom.badgePunch,
-        res.isMode2Pass ? 'pass' : 'fail',
-        res.isMode2Pass ? `PASS (${(res.punch.utilization * 100).toFixed(0)}%)` : 'FAIL'
-      );
-    } else {
-      dom.subPunch.innerText = `u0 v_Ed: ${res.punch.v_Ed_0.toFixed(2)} MPa | v_Rd: —`;
-      setCardStatus(dom.cardPunch, dom.badgePunch, 'info', 'PENDING GRADE/ρ_l');
-    }
-  }
-
-  // Card 6: Mode 3 Bending
-  if (!res.hasSpanL) {
-    dom.valBending.innerText = '—';
-    dom.subBending.innerText = 'Enter span L to compute';
-    setCardStatus(dom.cardBending, dom.badgeBending, 'info', 'PENDING SPAN L');
-  } else {
-    dom.valBending.innerText = `${res.M_imposed_max.toFixed(2)} kNm/m`;
-    dom.subBending.innerText = `Benchmark: ${res.M_UDL_benchmark.toFixed(2)} kNm/m (${res.bendingOrientation})`;
-    setCardStatus(
-      dom.cardBending, dom.badgeBending,
-      res.isMode3Pass ? 'pass' : 'fail',
-      res.isMode3Pass ? `PASS (${((res.M_imposed_max / res.M_UDL_benchmark) * 100).toFixed(0)}%)` : 'FAIL'
-    );
-  }
-
-  // Card 7: Footprint UDL
-  dom.tagUdlArea.innerText = `${res.plat.area.toFixed(2)} m²`;
-  dom.valUdl.innerText = `${res.udl_kPa.toFixed(2)} kN/m²`;
-  dom.subUdl.innerText = `${res.udl_ton.toFixed(2)} t/m² (Rating: ${res.udlLimit_kPa.toFixed(2)} kN/m²)`;
-  if (res.isUdlPass) {
-    const margin = ((res.udlLimit_kPa - res.udl_kPa) / res.udlLimit_kPa) * 100;
-    setCardStatus(dom.cardUdl, dom.badgeUdl, 'pass', `PASS (${margin.toFixed(0)}% MARGIN)`);
-  } else {
-    const over = ((res.udl_kPa - res.udlLimit_kPa) / res.udlLimit_kPa) * 100;
-    setCardStatus(dom.cardUdl, dom.badgeUdl, 'fail', `FAIL (+${over.toFixed(1)}%)`);
-  }
-
-  // Card 8: Spreader Plate
-  if (!inputs.plateEnabled) {
-    dom.valRigidity.innerText = 'OFF';
-    dom.subRigidity.innerText = 'Bare wheels on floor';
-    setCardStatus(dom.cardRigidity, dom.badgeRigidity, 'info', 'NO PLATE');
-  } else if (res.isPlateUndersized) {
-    dom.valRigidity.innerText = 'UNDERSIZED';
-    dom.subRigidity.innerText = `Plate < skate (${res.governing.chassisW}×${res.governing.chassisL})`;
-    setCardStatus(dom.cardRigidity, dom.badgeRigidity, 'fail', 'PLATE TOO SMALL');
-  } else if (res.isCurling) {
-    dom.valRigidity.innerText = 'CURLING';
-    dom.subRigidity.innerText = `t = ${inputs.t_plate} < ${res.t_req.toFixed(1)} mm`;
-    setCardStatus(dom.cardRigidity, dom.badgeRigidity, 'fail', 'EDGE LIFT-OFF');
-  } else if (res.isSpreadOK === true) {
-    dom.valRigidity.innerText = 'RIGID';
-    dom.subRigidity.innerText = `t ≥ ${res.t_req.toFixed(1)} mm | Spread ${res.bottomSpread_mm.toFixed(0)} mm`;
-    setCardStatus(dom.cardRigidity, dom.badgeRigidity, 'pass', 'PASS (≥ 2h)');
-  } else if (res.isSpreadOK === false) {
-    dom.valRigidity.innerText = 'NARROW';
-    dom.subRigidity.innerText = `B = ${inputs.B_plate} < 2h (${res.B_code_min} mm)`;
-    setCardStatus(dom.cardRigidity, dom.badgeRigidity, 'warn', 'BELOW 2h');
-  } else {
-    dom.valRigidity.innerText = 'RIGID';
-    dom.subRigidity.innerText = `t = ${inputs.t_plate} ≥ ${res.t_req.toFixed(1)} mm`;
-    setCardStatus(dom.cardRigidity, dom.badgeRigidity, 'info', 'PENDING h');
-  }
-
-  // Card 9: Evaluation
-  const failed = [];
-  const pending = [];
-  if (res.isUdlPass === false) failed.push('UDL');
-  if (res.isMode1Pass === false) failed.push('Mode 1'); else if (res.isMode1Pass === null) pending.push('M1');
-  if (res.isMode2Pass === false) failed.push('Mode 2'); else if (res.isMode2Pass === null) pending.push('M2');
-  if (res.isMode3Pass === false) failed.push('Mode 3'); else if (res.isMode3Pass === null) pending.push('M3');
-
-  if (failed.length > 0) {
-    dom.valVerdict.innerText = `FAIL (${failed.join(', ')})`;
-    dom.subVerdict.innerText = pending.length > 0 ? `Pending: ${pending.join(', ')}` : 'Exceeds limit';
-    setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'fail', 'FAIL');
-  } else if (pending.length > 0) {
-    dom.valVerdict.innerText = 'UDL PASS';
-    dom.subVerdict.innerText = `Pending: ${pending.join(', ')}`;
-    setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'warn', 'PENDING INPUT');
-  } else {
-    dom.valVerdict.innerText = 'ALL PASS';
-    dom.subVerdict.innerText = 'All checks pass';
-    setCardStatus(dom.cardVerdict, dom.badgeVerdict, 'pass', 'PASS');
-  }
+  updateSharedSlabOutputs(dom, inputs, res);
 
   dom.lblFrontElevationSub.innerText = res.governingIsPowered
     ? res.poweredSpec.name
@@ -534,7 +342,7 @@ function update() {
 }
 
 window.onload = () => {
-  initTheme();
+  getTheme = initTheme(dom.btnThemeToggle, () => update());
   bindEvents();
   syncFollowerCatalogInputs(dom.selectFollowerModel.value);
   setMode(4);
