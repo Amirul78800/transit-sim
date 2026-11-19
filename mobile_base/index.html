@@ -4,8 +4,41 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Floor Loading Assessment — Mobile Base (Casters)</title>
-  <meta name="description" content="Floor loading assessment simulator for heavy-duty wheeled Mobile Base with casters.">
+  <meta name="description" content="Floor loading assessment for heavy-duty 4, 6, and 8-caster Mobile Base platforms with single or twin-wheel casters: Hertz + Gent surface pressure, BS 8110-1 / Eurocode 2 punching shear, and Method B slab bending.">
+  <meta name="keywords" content="mobile base floor loading, heavy duty caster wheel load, twin wheel caster punching shear, BS 8110, Eurocode 2, Hertzian contact stress">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://loadskatesim.amirulazhj.tech/mobile_base/">
   <meta name="theme-color" content="#0b1120">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Floor Loading Assessment">
+  <meta property="og:url" content="https://loadskatesim.amirulazhj.tech/mobile_base/">
+  <meta property="og:title" content="Floor Loading Assessment — Mobile Base (Casters)">
+  <meta property="og:description" content="Evaluate 4, 6, and 8-caster Mobile Base platforms (single or twin-wheel) against floor UDL, Hertz + Gent surface pressure, BS 8110 / EC2 punching shear, and Method B bending.">
+  <meta property="og:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Mobile Base Floor Loading Assessment preview with 45-degree punching shear cone and 6-caster plan">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Floor Loading Assessment — Mobile Base (Casters)">
+  <meta name="twitter:description" content="Evaluate 4, 6, and 8-caster Mobile Base platforms against floor UDL, surface pressure, punching shear, and slab bending.">
+  <meta name="twitter:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
+  <meta name="twitter:image:alt" content="Mobile Base Floor Loading Assessment preview">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Floor Loading Assessment — Mobile Base (Casters)",
+    "url": "https://loadskatesim.amirulazhj.tech/mobile_base/",
+    "applicationCategory": "EngineeringApplication",
+    "operatingSystem": "Web",
+    "description": "Structural floor loading simulator for 4, 6, and 8-caster wheeled mobile base platforms."
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='.9em' font-size='70' x='15'>⚙️</text></svg>">
   <link rel="stylesheet" href="/style.css?v=10">
 </head>
@@ -377,7 +410,7 @@
           <span style="color:var(--accent); font-size:11px;" id="lblFrontElevationSub">—</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="frontCanvas" width="940" height="340"></canvas>
+          <canvas id="frontCanvas" width="940" height="340" role="img" aria-label="Side view of governing caster wheel, spreader plate, and downward 45-degree concrete punching shear cone"></canvas>
         </div>
       </div>
 
@@ -387,7 +420,7 @@
           <span style="color:var(--accent); font-size:11px;" id="lblTopPlanSub">—</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="topCanvas" width="940" height="260"></canvas>
+          <canvas id="topCanvas" width="940" height="260" role="img" aria-label="Top-down plan view showing caster positions on mobile base frame"></canvas>
         </div>
       </div>
     </div>

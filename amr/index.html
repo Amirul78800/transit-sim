@@ -3,9 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Floor Loading Assessment — AMR / Skate</title>
-  <meta name="description" content="Floor loading assessment simulator for AMR and heavy-duty machine skates.">
+  <title>Floor Loading Assessment — AMR / Powered Skates</title>
+  <meta name="description" content="Floor loading assessment for 2, 4, 6, 8, and 10-point AMR and heavy-duty machine skates: Hertz + Gent contact stress, BS 8110-1 / Eurocode 2 punching shear, and Method B slab bending.">
+  <meta name="keywords" content="AMR floor loading, machine skate slab check, TS-10T, SRS-6, CRQ-8, TC 30Ton, BS 8110 punching shear, Eurocode 2, spreader plate">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://loadskatesim.amirulazhj.tech/amr/">
   <meta name="theme-color" content="#0b1120">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Floor Loading Assessment">
+  <meta property="og:url" content="https://loadskatesim.amirulazhj.tech/amr/">
+  <meta property="og:title" content="Floor Loading Assessment — AMR / Powered Skates">
+  <meta property="og:description" content="Evaluate 2-skate to 10-point AMR / skate configurations against floor UDL, Hertz + Gent surface pressure, BS 8110 / EC2 punching shear, and Method B bending.">
+  <meta property="og:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="AMR / Skate Floor Loading Assessment preview with 45-degree punching shear cone and 8-point plan">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Floor Loading Assessment — AMR / Powered Skates">
+  <meta name="twitter:description" content="Evaluate 2-skate to 10-point AMR / skate configurations against floor UDL, surface pressure, punching shear, and slab bending.">
+  <meta name="twitter:image" content="https://loadskatesim.amirulazhj.tech/preview.png">
+  <meta name="twitter:image:alt" content="AMR / Skate Floor Loading Assessment preview">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Floor Loading Assessment — AMR / Powered Skates",
+    "url": "https://loadskatesim.amirulazhj.tech/amr/",
+    "applicationCategory": "EngineeringApplication",
+    "operatingSystem": "Web",
+    "description": "Structural floor loading simulator for 2-skate, 4-point, 6-point, 8-point, and 10-point AMR/skate rigs."
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='.9em' font-size='70' x='15'>⚙️</text></svg>">
   <link rel="stylesheet" href="/style.css?v=10">
 </head>
@@ -402,7 +435,7 @@
           <span style="color:var(--accent); font-size:11px;" id="lblFrontElevationSub">—</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="frontCanvas" width="940" height="340"></canvas>
+          <canvas id="frontCanvas" width="940" height="340" role="img" aria-label="Side view of governing skate bogie, spreader plate, and downward 45-degree concrete punching shear cone"></canvas>
         </div>
       </div>
 
@@ -412,7 +445,7 @@
           <span style="color:var(--accent); font-size:11px;" id="lblTopPlanSub">—</span>
         </div>
         <div class="canvas-wrap">
-          <canvas id="topCanvas" width="940" height="260"></canvas>
+          <canvas id="topCanvas" width="940" height="260" role="img" aria-label="Top-down plan view showing powered skate and follower skate positions on platform"></canvas>
         </div>
       </div>
     </div>
