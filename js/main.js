@@ -1,13 +1,16 @@
-import { CATALOG_MODELS } from './data.js?v=10';
-import { runPhysicsCalculations } from './physics.js?v=10';
-import { renderLoadTree, drawFrontElevation, drawTopPlan } from './renderer.js?v=10';
+import { CATALOG_MODELS } from './data.js?v=11';
+import { runPhysicsCalculations } from './physics.js?v=11';
+import { renderLoadTree, drawFrontElevation, drawTopPlan, drawSfdBmdChart, renderAmrFormulaSteps } from './renderer.js?v=11';
 import {
   optNum, initTheme, bindPresetGroup, setCardStatus,
   readSharedSlabInputs, updateSharedSlabOutputs
-} from './ui_common.js?v=10';
+} from './ui_common.js?v=11';
 
-let activeSetup = 4; // 1=2-Skates, 2=4-Point, 3=6-Point, 4=8-Point, 5=10-Point
+let activeSetup = 3; // 1=Preset A (2-Skate), 2=4-Point, 3=Preset B (6-Skate), 4=8-Point, 5=10-Point
 let designCode = 'BS8110';
+let beMode = '45deg';
+let nuPU = 0.50;
+let lastNonZeroBase = 1500;
 let getTheme = () => 'dark';
 let cachedInputs = null;
 let cachedResults = null;
@@ -28,6 +31,7 @@ const dom = {
   shoreAGroup: document.getElementById('shoreAGroup'),
   inputPnmMass: document.getElementById('inputPnmMass'),
   inputBaseMass: document.getElementById('inputBaseMass'),
+  checkBaseEnable: document.getElementById('checkBaseEnable'),
   inputAddLoad: document.getElementById('inputAddLoad'),
   checkPlateEnable: document.getElementById('checkPlateEnable'),
   inputPlateWidth: document.getElementById('inputPlateWidth'),
@@ -117,11 +121,14 @@ const dom = {
 
   lblTreeModeTag: document.getElementById('lblTreeModeTag'),
   treeBranchWrap: document.getElementById('treeBranchWrap'),
+  lblSfdBmdSub: document.getElementById('lblSfdBmdSub'),
   lblFrontElevationSub: document.getElementById('lblFrontElevationSub'),
   lblTopPlanTitle: document.getElementById('lblTopPlanTitle'),
   lblTopPlanSub: document.getElementById('lblTopPlanSub'),
+  sfdBmdCanvas: document.getElementById('sfdBmdCanvas'),
   frontCanvas: document.getElementById('frontCanvas'),
-  topCanvas: document.getElementById('topCanvas')
+  topCanvas: document.getElementById('topCanvas'),
+  formulaStepsWrap: document.getElementById('formulaStepsWrap')
 };
 
 function syncFollowerCatalogInputs(modelKey) {
@@ -140,6 +147,19 @@ function bindEvents() {
     update();
   });
 
+  if (dom.checkBaseEnable) {
+    dom.checkBaseEnable.addEventListener('change', () => {
+      if (dom.checkBaseEnable.checked) {
+        dom.inputBaseMass.value = lastNonZeroBase > 0 ? lastNonZeroBase : 1500;
+      } else {
+        const cur = parseFloat(dom.inputBaseMass.value);
+        if (cur > 0) lastNonZeroBase = cur;
+        dom.inputBaseMass.value = 0;
+      }
+      update();
+    });
+  }
+
   const liveInputs = [
     dom.inputPlatL, dom.inputPlatW,
     dom.selectPoweredModel, dom.inputSkateBias,
@@ -153,6 +173,17 @@ function bindEvents() {
   liveInputs.forEach((el) => el.addEventListener('input', () => {
     if (el === dom.inputFollowerWheels || el === dom.inputFollowerDia || el === dom.inputFollowerWidth) {
       dom.selectFollowerModel.value = 'CUSTOM';
+    }
+    if (el === dom.inputBaseMass && dom.checkBaseEnable) {
+      const mVal = parseFloat(dom.inputBaseMass.value) || 0;
+      if (mVal > 0) lastNonZeroBase = mVal;
+      dom.checkBaseEnable.checked = mVal > 0;
+    }
+    if (el === dom.inputSkateBias) {
+      const bVal = parseFloat(dom.inputSkateBias.value);
+      document.querySelectorAll('#btnGroupBias .btn-preset').forEach((b) => {
+        b.classList.toggle('active', parseFloat(b.getAttribute('data-bias')) === bVal);
+      });
     }
     if (el === dom.inputPlatL || el === dom.inputPlatW) {
       document.querySelectorAll('#btnGroupPlatform .btn-preset').forEach((b) => b.classList.remove('active'));
@@ -172,6 +203,18 @@ function bindEvents() {
   bindPresetGroup('#btnGroupPlatform', (btn) => {
     dom.inputPlatL.value = btn.getAttribute('data-l');
     dom.inputPlatW.value = btn.getAttribute('data-w');
+    update();
+  });
+  bindPresetGroup('#btnGroupBias', (btn) => {
+    dom.inputSkateBias.value = btn.getAttribute('data-bias');
+    update();
+  });
+  bindPresetGroup('#btnGroupNu', (btn) => {
+    nuPU = parseFloat(btn.getAttribute('data-nu'));
+    update();
+  });
+  bindPresetGroup('#btnGroupBeMode', (btn) => {
+    beMode = btn.getAttribute('data-be');
     update();
   });
   bindPresetGroup('#btnGroupPlates', (btn) => {
@@ -206,9 +249,9 @@ function setMode(mode) {
   });
 
   const modeMeta = {
-    1: { summary: '2-Skates', tree: '2-SKATES', bias: 60, followerActive: false },
+    1: { summary: 'Preset A: 2× TS-10T', tree: 'PRESET A · 2-SKATE (TS-10T)', bias: 60, followerActive: false },
     2: { summary: '4-Point', tree: '4-POINT', bias: 35, followerActive: true },
-    3: { summary: '6-Point', tree: '6-POINT', bias: 25, followerActive: true },
+    3: { summary: 'Preset B: 6-Skate', tree: 'PRESET B · 6-SKATE (2×TS + 4×SRS)', bias: 20, followerActive: true },
     4: { summary: '8-Point', tree: '8-POINT', bias: 20, followerActive: true },
     5: { summary: '10-Point', tree: '10-POINT', bias: 19, followerActive: true }
   }[mode];
@@ -216,6 +259,9 @@ function setMode(mode) {
   dom.lblSetupSummary.innerText = modeMeta.summary;
   dom.lblTreeModeTag.innerText = modeMeta.tree;
   dom.inputSkateBias.value = modeMeta.bias;
+  document.querySelectorAll('#btnGroupBias .btn-preset').forEach((b) => {
+    b.classList.toggle('active', parseFloat(b.getAttribute('data-bias')) === modeMeta.bias);
+  });
 
   dom.panelFollower.style.opacity = modeMeta.followerActive ? '1' : '0.5';
   dom.panelFollower.style.pointerEvents = modeMeta.followerActive ? 'auto' : 'none';
@@ -226,6 +272,17 @@ function setMode(mode) {
 }
 
 function renderCanvases(inputs, res, isDark) {
+  if (dom.sfdBmdCanvas) {
+    drawSfdBmdChart(
+      dom.sfdBmdCanvas,
+      res.beam,
+      inputs.spanL,
+      res.M_UDL_benchmark,
+      res.V_UDL_benchmark,
+      isDark
+    );
+  }
+
   drawFrontElevation(dom.frontCanvas, {
     D: res.governingIsPowered ? res.poweredSpec.dia : inputs.dFollower,
     numWheels: res.governingIsPowered ? res.poweredSpec.wheels : inputs.nFollowerWheels,
@@ -267,7 +324,7 @@ function update() {
 
   const inputs = {
     platL: optNum(dom.inputPlatL) || 3.80,
-    platW: optNum(dom.inputPlatW) || 2.40,
+    platW: optNum(dom.inputPlatW) || 2.20,
     mPnm: parseFloat(dom.inputPnmMass.value),
     mBase: parseFloat(dom.inputBaseMass.value),
     addLoadPerFollower: parseFloat(dom.inputAddLoad.value) || 0,
@@ -279,7 +336,9 @@ function update() {
     wFollower: parseFloat(dom.inputFollowerWidth.value),
     matKey: dom.selectFollowerMat.value,
     shoreA: parseFloat(dom.inputShoreA.value),
+    nuPU,
     skateBiasPct: parseFloat(dom.inputSkateBias.value),
+    beMode,
     ...shared,
     activeSetup
   };
@@ -289,7 +348,7 @@ function update() {
   dom.lblFollowerWheels.innerText = `${inputs.nFollowerWheels}`;
   dom.lblFollowerDia.innerText = `${inputs.dFollower} mm`;
   dom.lblFollowerWidth.innerText = `${inputs.wFollower} mm`;
-  dom.lblShoreA.innerText = `${inputs.shoreA} A`;
+  dom.lblShoreA.innerText = `${inputs.shoreA} A · ν=${nuPU.toFixed(2)}`;
   dom.shoreAGroup.style.display = inputs.matKey === 'pu' ? 'block' : 'none';
   dom.lblPnmMass.innerText = `${inputs.mPnm.toLocaleString()} kg`;
   dom.lblBaseMass.innerText = `${inputs.mBase.toLocaleString()} kg`;
@@ -315,14 +374,14 @@ function update() {
   setCardStatus(dom.cardSkateLoad, dom.badgeSkateLoad, 'info', `${res.totalSkates} SKATES`);
 
   dom.valPowWheel.innerText = `${res.powEval.peakWheel_kN.toFixed(2)} kN`;
-  dom.subPowWheel.innerText = `Static: ${res.powEval.staticWheel_kN.toFixed(2)} kN | Peak: ${res.powEval.peakWheel_kN.toFixed(2)} kN`;
+  dom.subPowWheel.innerText = `Stat: ${res.powEval.staticWheel_kN.toFixed(2)} kN | P_mean: ${res.powEval.hertzStatic.p_mean.toFixed(2)}→${res.powEval.hertz.p_mean.toFixed(2)} MPa`;
   setCardStatus(dom.cardPowWheel, dom.badgePowWheel, 'info', res.poweredSpec.name.split('(')[0].trim());
 
   if (res.folEval) {
-    dom.valFolWheel.innerText = `${res.folEval.peakWheel_kN.toFixed(2)} kN`;
-    dom.subFolWheel.innerText = `Static: ${res.folEval.staticWheel_kN.toFixed(2)} kN | Fork Peak: ${res.folEval.peakFork_kN.toFixed(2)} kN`;
+    dom.valFolWheel.innerText = `${res.folEval.peakWheel_kN.toFixed(2)} / ${res.folEval.peakFork_kN.toFixed(2)} kN`;
+    dom.subFolWheel.innerText = `Wheel Stat: ${res.folEval.staticWheel_kN.toFixed(2)} | Fork Stat: ${res.folEval.staticFork_kN.toFixed(2)} | P_mean: ${res.folEval.hertzStatic.p_mean.toFixed(2)}→${res.folEval.hertz.p_mean.toFixed(2)}`;
     const folTag = res.followerSpec ? res.followerSpec.name.split('(')[0].trim() : 'CUSTOM';
-    setCardStatus(dom.cardFolWheel, dom.badgeFolWheel, 'info', folTag);
+    setCardStatus(dom.cardFolWheel, dom.badgeFolWheel, 'info', `${folTag} (Lw=${res.folEval.width})`);
   } else {
     dom.valFolWheel.innerText = 'N/A';
     dom.subFolWheel.innerText = 'No follower skates in 2-Skate mode';
@@ -331,13 +390,20 @@ function update() {
 
   updateSharedSlabOutputs(dom, inputs, res);
 
+  if (dom.lblSfdBmdSub) {
+    dom.lblSfdBmdSub.innerText = res.beam
+      ? `${res.bendingOrientation} · L = ${inputs.spanL.toFixed(2)} m · be = ${res.b_e_governing.toFixed(2)} m`
+      : 'Pending Span L';
+  }
+
   dom.lblFrontElevationSub.innerText = res.governingIsPowered
     ? res.poweredSpec.name
     : (res.followerSpec ? res.followerSpec.name : 'Custom Follower');
   dom.lblTopPlanTitle.innerText = `TOP PLAN: ${res.plat.label}`;
-  dom.lblTopPlanSub.innerText = `${res.totalSkates} Skates`;
+  dom.lblTopPlanSub.innerText = `${res.totalSkates} Skates · Base ${inputs.mBase > 0 ? `${inputs.mBase} kg` : 'Removed (0 kg)'}`;
 
   renderLoadTree(dom.treeBranchWrap, res);
+  renderAmrFormulaSteps(dom.formulaStepsWrap, inputs, res);
   renderCanvases(inputs, res, isDark);
 }
 
@@ -345,5 +411,5 @@ window.onload = () => {
   getTheme = initTheme(dom.btnThemeToggle, () => update());
   bindEvents();
   syncFollowerCatalogInputs(dom.selectFollowerModel.value);
-  setMode(4);
+  setMode(3);
 };

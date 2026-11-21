@@ -1,4 +1,4 @@
-import { CONFIRMED_UDL_KPA } from './data.js?v=10';
+import { CONFIRMED_UDL_KPA } from './data.js?v=11';
 
 export const optNum = (el) => {
   const v = parseFloat(el.value);
@@ -93,49 +93,56 @@ export function updateSharedSlabOutputs(dom, inputs, res) {
     dom.lblHandlingBadge.style.color = 'var(--fail)';
   }
 
-  // Surface Pressure
-  dom.valPressure.innerText = `${res.contactPressure_max_MPa.toFixed(2)} MPa`;
+  // Mode 1: Surface Bearing Pressure (Gent + Hertz, BS 8110-1 Cl. 5.2.3.4 fb = 0.4 * fcu)
+  dom.valPressure.innerText = `${res.contactPressure_mean_MPa.toFixed(2)} MPa`;
+  const statStr = res.contactPressure_static_mean_MPa != null
+    ? `Stat: ${res.contactPressure_static_mean_MPa.toFixed(2)} | Max: ${res.contactPressure_max_MPa.toFixed(2)}`
+    : `Max: ${res.contactPressure_max_MPa.toFixed(2)}`;
   if (res.mode1Limit_MPa !== null) {
-    dom.subPressure.innerText = `p_mean: ${res.contactPressure_mean_MPa.toFixed(2)} | Limit: ${res.mode1Limit_MPa.toFixed(1)} MPa`;
+    dom.subPressure.innerText = `${statStr} | Limit: ${res.mode1Limit_MPa.toFixed(1)} MPa`;
     setCardStatus(dom.cardPressure, dom.badgePressure, res.isMode1Pass ? 'pass' : 'fail', res.isMode1Pass ? 'PASS' : 'FAIL');
   } else {
-    dom.subPressure.innerText = `p_mean: ${res.contactPressure_mean_MPa.toFixed(2)} MPa | Limit: —`;
+    dom.subPressure.innerText = `${statStr} MPa | Limit: —`;
     setCardStatus(dom.cardPressure, dom.badgePressure, 'info', 'PENDING LIMIT');
   }
 
-  // Punching Shear
+  // Mode 2: Concentrated Point Load Qk (4.5 / 7.0 kN) + Punching Shear
   dom.tagPunchCode.innerText = `${res.punch.code} (${res.punch.perimeterLabel})`;
-  if (!res.hasHSlab) {
+  if (res.qkPeakVal_kN != null) {
+    dom.valPunch.innerText = `${res.qkPeakVal_kN.toFixed(2)} kN`;
+    const shearStr = (res.hasHSlab && res.punch.v_Ed_1 != null)
+      ? ` | v1: ${res.punch.v_Ed_1.toFixed(3)} MPa`
+      : '';
+    dom.subPunch.innerText = `Static: ${res.qkStaticVal_kN.toFixed(2)}/${res.qkStaticLimit_kN.toFixed(1)} | Qk: ${res.qkPeakLimit_kN.toFixed(1)} kN${shearStr}`;
+    if (res.isMode2Pass === false) {
+      const why = res.isMode2QkPass === false ? `FAIL (> ${res.qkPeakLimit_kN.toFixed(1)} kN)` : 'FAIL (SHEAR)';
+      setCardStatus(dom.cardPunch, dom.badgePunch, 'fail', why);
+    } else {
+      const pct = (res.qkPeakVal_kN / res.qkPeakLimit_kN) * 100;
+      setCardStatus(dom.cardPunch, dom.badgePunch, 'pass', `PASS (${pct.toFixed(0)}% Qk)`);
+    }
+  } else if (!res.hasHSlab) {
     dom.valPunch.innerText = '—';
     dom.subPunch.innerText = 'Enter slab h to compute v_Ed';
     setCardStatus(dom.cardPunch, dom.badgePunch, 'info', 'PENDING h');
-  } else {
-    dom.valPunch.innerText = `${res.punch.v_Ed_1.toFixed(3)} MPa`;
-    if (res.isMode2Pass !== null) {
-      dom.subPunch.innerText = `v_Rd,c: ${res.punch.v_Rd_c.toFixed(3)} | u0: ${res.punch.v_Ed_0.toFixed(2)}/${res.punch.v_Rd_max.toFixed(2)}`;
-      setCardStatus(
-        dom.cardPunch, dom.badgePunch,
-        res.isMode2Pass ? 'pass' : 'fail',
-        res.isMode2Pass ? `PASS (${(res.punch.utilization * 100).toFixed(0)}%)` : 'FAIL'
-      );
-    } else {
-      dom.subPunch.innerText = `u0 v_Ed: ${res.punch.v_Ed_0.toFixed(2)} MPa | v_Rd: —`;
-      setCardStatus(dom.cardPunch, dom.badgePunch, 'info', 'PENDING GRADE/ρ_l');
-    }
   }
 
-  // Slab Bending
+  // Mode 3: Slab Bending & Strip Shear (per 1.0 m strip)
   if (!res.hasSpanL) {
     dom.valBending.innerText = '—';
     dom.subBending.innerText = 'Enter span L to compute';
     setCardStatus(dom.cardBending, dom.badgeBending, 'info', 'PENDING SPAN L');
   } else {
     dom.valBending.innerText = `${res.M_imposed_max.toFixed(2)} kNm/m`;
-    dom.subBending.innerText = `Benchmark: ${res.M_UDL_benchmark.toFixed(2)} kNm/m (${res.bendingOrientation})`;
+    const vText = (res.V_imposed_max != null && res.V_UDL_benchmark != null)
+      ? ` | V: ${res.V_imposed_max.toFixed(2)}/${res.V_UDL_benchmark.toFixed(2)} kN/m`
+      : '';
+    dom.subBending.innerText = `M_ref: ${res.M_UDL_benchmark.toFixed(2)}${vText} (${res.bendingOrientation})`;
+    const pctM = (res.M_imposed_max / res.M_UDL_benchmark) * 100;
     setCardStatus(
       dom.cardBending, dom.badgeBending,
       res.isMode3Pass ? 'pass' : 'fail',
-      res.isMode3Pass ? `PASS (${((res.M_imposed_max / res.M_UDL_benchmark) * 100).toFixed(0)}%)` : 'FAIL'
+      res.isMode3Pass ? `PASS (${pctM.toFixed(0)}%)` : `FAIL (+${(pctM - 100).toFixed(0)}%)`
     );
   }
 

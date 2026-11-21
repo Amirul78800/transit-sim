@@ -1,7 +1,7 @@
 import {
-  G, CONFIRMED_UDL_KPA, MAT_DATA, PLATE_MAT_DATA,
+  G, CONFIRMED_UDL_KPA, S2_DEFAULTS, MAT_DATA, PLATE_MAT_DATA,
   POWERED_MODELS, CATALOG_MODELS, CONCRETE_GRADES
-} from './data.js?v=10';
+} from './data.js?v=11';
 
 const isPosNum = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
@@ -10,27 +10,29 @@ export function gentModulusMPa(shoreA) {
   return (0.0981 * (56.0 + 7.62336 * s)) / (0.137505 * (254.0 - 2.54 * s));
 }
 
-export function hertzLineContact(F_N, dia_mm, width_mm, matKey, shoreA = 95) {
+export function hertzLineContact(F_N, dia_mm, width_mm, matKey, shoreA = 95, nuOverride = null) {
   const R_mm = dia_mm / 2.0;
   const nu_c = 0.20;
   const E_c = 30000.0;
 
-  let E_w, nu_w;
+  let E_w, nu_w, E_star;
   if (matKey === 'pu') {
     E_w = gentModulusMPa(shoreA);
-    nu_w = MAT_DATA.pu.nu;
+    nu_w = isPosNum(nuOverride) ? nuOverride : MAT_DATA.pu.nu;
+    // Elastomer on concrete (E_c >> E_w): report standard uses rigid-substrate form E* = E / (1 - nu^2)
+    E_star = E_w / (1.0 - nu_w * nu_w);
   } else {
     E_w = MAT_DATA[matKey].E;
     nu_w = MAT_DATA[matKey].nu;
+    E_star = 1.0 / ((1 - nu_w * nu_w) / E_w + (1 - nu_c * nu_c) / E_c);
   }
 
-  const E_star = 1.0 / ((1 - nu_w * nu_w) / E_w + (1 - nu_c * nu_c) / E_c);
-  const b_mm = Math.sqrt((4.0 * F_N * R_mm) / (Math.PI * width_mm * E_star));
+  const b_mm = F_N > 0 ? Math.sqrt((4.0 * F_N * R_mm) / (Math.PI * width_mm * E_star)) : 0;
   const area_mm2 = 2.0 * b_mm * width_mm;
-  const p_mean = F_N / area_mm2;
-  const p_max = (2.0 * F_N) / (Math.PI * b_mm * width_mm);
+  const p_mean = area_mm2 > 0 ? F_N / area_mm2 : 0;
+  const p_max = area_mm2 > 0 ? (2.0 * F_N) / (Math.PI * b_mm * width_mm) : 0;
 
-  return { E_w, E_star, b_mm, contactWidth_mm: 2.0 * b_mm, area_mm2, p_mean, p_max };
+  return { E_w, nu_w, E_star, b_mm, contactWidth_mm: 2.0 * b_mm, area_mm2, p_mean, p_max };
 }
 
 export function punchingShearCheck({ V_Ed_N, a1_mm, a2_mm, d_mm, f_ck, f_cu, rho_l, code = 'BS8110', beta = 1.0 }) {
@@ -118,7 +120,102 @@ export function methodBBending(loads_kN_pos_m, L_m) {
   return { RA_kN: RA, RB_kN: RB, a_crit_m: bestA, M_max_kNm: bestM };
 }
 
-function evaluateSkateUnit({ nomSkate_kN, peakSkate_kN, nWheels, wheelsPerFork = 1, dia, width, pairWidth, matKey, shoreA, chassisW, chassisL }) {
+// General Multi-Point Simply Supported Beam Solver (SFD + BMD per 1.0 m strip)
+export function solveMultiPointBeam(loads, L_m) {
+  const active = loads
+    .filter((l) => l.x_m > 1e-6 && l.x_m < L_m - 1e-6 && l.pEff_kNm > 0)
+    .sort((a, b) => a.x_m - b.x_m);
+
+  if (active.length === 0 || !isPosNum(L_m)) {
+    return {
+      L_m: L_m || 0,
+      RA_kNm: 0,
+      RB_kNm: 0,
+      V_max_kNm: 0,
+      V_mid_kNm: 0,
+      M_max_kNm: 0,
+      x_Mmax_m: (L_m || 0) / 2,
+      activeLoads: [],
+      knotMoments: [],
+      sfdPoints: [[0, 0], [L_m || 1, 0]],
+      bmdPoints: [[0, 0], [L_m || 1, 0]]
+    };
+  }
+
+  const totalP = active.reduce((s, l) => s + l.pEff_kNm, 0);
+  const RB_kNm = active.reduce((s, l) => s + l.pEff_kNm * l.x_m, 0) / L_m;
+  const RA_kNm = totalP - RB_kNm;
+
+  // Group nearly-coincident positions so SFD drops cleanly once per x-coordinate
+  const groups = [];
+  for (const l of active) {
+    const last = groups[groups.length - 1];
+    if (last && Math.abs(last.x_m - l.x_m) < 1e-5) {
+      last.pEff_kNm += l.pEff_kNm;
+      last.P_kN += l.P_kN;
+      last.items.push(l);
+    } else {
+      groups.push({ x_m: l.x_m, pEff_kNm: l.pEff_kNm, P_kN: l.P_kN, id: l.id, items: [l] });
+    }
+  }
+
+  const sfdPoints = [[0, 0], [0, RA_kNm]];
+  const bmdPoints = [[0, 0]];
+  const knotMoments = [];
+
+  let vCurr = RA_kNm;
+  let mCurr = 0;
+  let prevX = 0;
+  let V_max_kNm = Math.max(Math.abs(RA_kNm), Math.abs(RB_kNm));
+  let M_max_kNm = 0;
+  let x_Mmax_m = L_m / 2;
+
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    mCurr += vCurr * (g.x_m - prevX);
+    sfdPoints.push([g.x_m, vCurr]);
+    bmdPoints.push([g.x_m, mCurr]);
+    knotMoments.push({ x_m: g.x_m, M_kNm: mCurr, V_before: vCurr, V_after: vCurr - g.pEff_kNm, id: g.id, pEff_kNm: g.pEff_kNm });
+
+    if (mCurr > M_max_kNm) {
+      M_max_kNm = mCurr;
+      x_Mmax_m = g.x_m;
+    }
+
+    vCurr -= g.pEff_kNm;
+    sfdPoints.push([g.x_m, vCurr]);
+    V_max_kNm = Math.max(V_max_kNm, Math.abs(vCurr));
+    prevX = g.x_m;
+  }
+
+  mCurr += vCurr * (L_m - prevX);
+  sfdPoints.push([L_m, vCurr], [L_m, 0]);
+  bmdPoints.push([L_m, 0]);
+
+  // Mid-segment interior shear (e.g., between outer SRS-6 and center TS-10T)
+  let V_mid_kNm = 0;
+  if (knotMoments.length >= 3) {
+    V_mid_kNm = Math.max(Math.abs(knotMoments[0].V_after), Math.abs(knotMoments[knotMoments.length - 1].V_before));
+  } else if (knotMoments.length === 1) {
+    V_mid_kNm = Math.abs(knotMoments[0].V_before);
+  }
+
+  return {
+    L_m,
+    RA_kNm,
+    RB_kNm,
+    V_max_kNm,
+    V_mid_kNm,
+    M_max_kNm,
+    x_Mmax_m,
+    activeLoads: active,
+    knotMoments,
+    sfdPoints,
+    bmdPoints
+  };
+}
+
+function evaluateSkateUnit({ nomSkate_kN, peakSkate_kN, nWheels, wheelsPerFork = 1, dia, width, pairWidth, matKey, shoreA, nuPU, chassisW, chassisL }) {
   const staticWheel_kN = nomSkate_kN / nWheels;
   const staticFork_kN = staticWheel_kN * wheelsPerFork;
 
@@ -135,7 +232,8 @@ function evaluateSkateUnit({ nomSkate_kN, peakSkate_kN, nWheels, wheelsPerFork =
     peakFork_kN = peakWheel_kN;
   }
 
-  const hertz = hertzLineContact(peakWheel_kN * 1000, dia, width, matKey, shoreA);
+  const hertzStatic = hertzLineContact(staticWheel_kN * 1000, dia, width, matKey, shoreA, nuPU);
+  const hertz = hertzLineContact(peakWheel_kN * 1000, dia, width, matKey, shoreA, nuPU);
   const patchW_mm = Math.max(50, pairWidth || width);
   const patchL_mm = Math.max(50, hertz.contactWidth_mm);
 
@@ -146,6 +244,11 @@ function evaluateSkateUnit({ nomSkate_kN, peakSkate_kN, nWheels, wheelsPerFork =
     peakFork_kN,
     staticWheel_kN,
     peakWheel_kN,
+    nWheels,
+    wheelsPerFork,
+    dia,
+    width,
+    hertzStatic,
     hertz,
     patchW_mm,
     patchL_mm,
@@ -157,12 +260,13 @@ function evaluateSkateUnit({ nomSkate_kN, peakSkate_kN, nWheels, wheelsPerFork =
 // Shared Spreader Plate + Modes 1, 2, 3 + UDL Evaluator
 function evaluateSlabChecks({
   plat, grossMass, grossWeight_kN, phiDynamic,
-  peakSupportLoad_kN, maxForkLoad_kN, governing,
+  peakSupportLoad_kN, maxForkStatic_kN, maxForkLoad_kN, maxWheelStatic_kN, maxWheelLoad_kN, governing,
   plateEnabled, B_plate, L_plate, t_plate, plateMat,
   pAllowFloor, hSlab, dSlab, concrete, rhoL, designCode, spanL, udlLimit_kPa,
-  baseCoords
+  baseCoords, beMode = '45deg', mode3Spec = null
 }) {
   const hasHSlab = isPosNum(hSlab);
+  const hSlab_m = (hasHSlab ? hSlab : S2_DEFAULTS.hSlab) / 1000.0;
   const effectiveDSlab = isPosNum(dSlab) ? Math.min(hSlab || dSlab, dSlab) : (hasHSlab ? Math.max(20, hSlab - 30) : null);
   const hasRhoL = isPosNum(rhoL);
   const hasSpanL = isPosNum(spanL);
@@ -208,12 +312,15 @@ function evaluateSlabChecks({
     }
   }
 
-  // Mode 1: Surface Contact Stress
-  let contactPressure_mean_MPa, contactPressure_max_MPa;
+  // Mode 1: Surface Contact Stress (Gent + Hertz, BS 8110-1 Cl. 5.2.3.4 fb = 0.4 * fcu)
+  let contactPressure_static_mean_MPa, contactPressure_mean_MPa, contactPressure_max_MPa;
   if (plateEnabled && isRigid) {
+    const pStaticPlate = ((grossWeight_kN / Math.max(1, baseCoords.length)) * 1000) / (Beff * plateContactL);
+    contactPressure_static_mean_MPa = pStaticPlate;
     contactPressure_mean_MPa = (peakSupportLoad_kN * 1000) / (Beff * plateContactL);
     contactPressure_max_MPa = contactPressure_mean_MPa;
   } else {
+    contactPressure_static_mean_MPa = governing.hertzStatic ? governing.hertzStatic.p_mean : governing.hertz.p_mean;
     contactPressure_mean_MPa = governing.hertz.p_mean;
     contactPressure_max_MPa = governing.hertz.p_max;
   }
@@ -223,9 +330,18 @@ function evaluateSlabChecks({
     hasPAllow && concreteDryBearing_MPa !== null ? Math.min(pAllowFloor, concreteDryBearing_MPa) :
     hasPAllow ? pAllowFloor :
     concreteDryBearing_MPa !== null ? concreteDryBearing_MPa : null;
-  const isMode1Pass = mode1Limit_MPa !== null ? (contactPressure_max_MPa <= mode1Limit_MPa) : null;
+  const isMode1Pass = mode1Limit_MPa !== null ? (contactPressure_mean_MPa <= mode1Limit_MPa) : null;
+  const isMode1MaxPass = mode1Limit_MPa !== null ? (contactPressure_max_MPa <= mode1Limit_MPa) : null;
 
-  // Mode 2: Punching Shear
+  // Mode 2: Concentrated Point Load Qk (EN 1991-1-1 / BS 6399) + Punching Shear
+  const qkStaticLimit_kN = S2_DEFAULTS.qkStatic_kN;
+  const qkPeakLimit_kN = S2_DEFAULTS.qkPeak_kN;
+  const qkStaticVal_kN = isPosNum(maxForkStatic_kN) ? maxForkStatic_kN : (isPosNum(maxWheelStatic_kN) ? maxWheelStatic_kN : 0);
+  const qkPeakVal_kN = maxForkLoad_kN;
+  const isQkStaticPass = qkStaticVal_kN <= qkStaticLimit_kN;
+  const isQkPeakPass = qkPeakVal_kN <= qkPeakLimit_kN;
+  const isMode2QkPass = (plateEnabled && isRigid) ? true : (isQkStaticPass && isQkPeakPass);
+
   const shearLoad_ULS_N = (plateEnabled && isRigid)
     ? (peakSupportLoad_kN * 1000 * gammaULS)
     : (maxForkLoad_kN * 1000 * gammaULS);
@@ -245,8 +361,9 @@ function evaluateSlabChecks({
   });
 
   const isMode2Pass =
+    isMode2QkPass === false ? false :
     (punch.pass_u0 === false || punch.pass_u1 === false) ? false :
-    (punch.pass_u0 === true && punch.pass_u1 === true) ? true : null;
+    true;
 
   const isSpreadOK = plateEnabled
     ? (hasHSlab ? (isRigid && B_plate >= B_code_min) : null)
@@ -254,14 +371,47 @@ function evaluateSlabChecks({
   const shearTopW_mm = (plateEnabled && !isPlateUndersized) ? Beff : governing.patchW_mm;
   const bottomSpread_mm = hasHSlab ? (shearTopW_mm + 2 * hSlab) : null;
 
-  // Mode 3: Method B Slab Bending
+  // Mode 3: Multi-Point Beam Solver & 1.0 m Strip Benchmark
   const M_UDL_benchmark = (hasSpanL && hasUdlLimit) ? (udlLimit_kPa * 1.0 * spanL * spanL) / 8.0 : null;
+  const V_UDL_benchmark = (hasSpanL && hasUdlLimit) ? (udlLimit_kPa * 1.0 * spanL) / 2.0 : null;
+
   let M_imposed_max = null;
+  let V_imposed_max = null;
   let M_raw_max = null;
   let b_e_governing = null;
   let bendingOrientation = null;
+  let beam = null;
+  let beamAlt = null;
 
-  if (hasSpanL) {
+  if (hasSpanL && mode3Spec) {
+    const buildBeamLoads = (mode) => mode3Spec.rawLoads.map((ld) => {
+      let be_m;
+      if (ld.fixedBe_m) {
+        be_m = ld.fixedBe_m;
+      } else if (mode === 'bs8110') {
+        be_m = ld.b_skate_m + 2.4 * ld.x_m * Math.max(0, 1.0 - ld.x_m / spanL);
+      } else {
+        be_m = ld.b_skate_m + 2.0 * hSlab_m;
+      }
+      return {
+        ...ld,
+        be_m,
+        pEff_kNm: ld.P_kN / be_m
+      };
+    });
+
+    const primaryLoads = buildBeamLoads(beMode);
+    const altLoads = buildBeamLoads(beMode === 'bs8110' ? '45deg' : 'bs8110');
+    beam = solveMultiPointBeam(primaryLoads, spanL);
+    beamAlt = solveMultiPointBeam(altLoads, spanL);
+
+    M_imposed_max = beam.M_max_kNm;
+    V_imposed_max = beam.V_max_kNm;
+    const midLoad = primaryLoads.find((l) => l.isPrimaryMid) || primaryLoads[0];
+    b_e_governing = midLoad ? midLoad.be_m : 1.0;
+    M_raw_max = M_imposed_max * b_e_governing;
+    bendingOrientation = beMode === 'bs8110' ? 'BS 8110 Flexural' : '45° Dispersion';
+  } else if (hasSpanL) {
     M_imposed_max = 0;
     M_raw_max = 0;
     b_e_governing = 1.0;
@@ -320,11 +470,18 @@ function evaluateSlabChecks({
         }
       }
     }
+    V_imposed_max = M_imposed_max > 0 ? (M_imposed_max * 4.0) / spanL : 0;
   }
 
-  const isMode3Pass = (M_imposed_max !== null && M_UDL_benchmark !== null)
+  const isMode3MomentPass = (M_imposed_max !== null && M_UDL_benchmark !== null)
     ? (M_imposed_max <= M_UDL_benchmark)
     : null;
+  const isMode3ShearPass = (V_imposed_max !== null && V_UDL_benchmark !== null)
+    ? (V_imposed_max <= V_UDL_benchmark)
+    : null;
+  const isMode3Pass = (isMode3MomentPass !== null && isMode3ShearPass !== null)
+    ? (isMode3MomentPass && isMode3ShearPass)
+    : isMode3MomentPass;
 
   const gates = [isUdlPass, isMode1Pass, isMode2Pass, isMode3Pass];
   const allPass = gates.some((g) => g === false) ? false : gates.every((g) => g === true) ? true : null;
@@ -333,11 +490,14 @@ function evaluateSlabChecks({
     hasHSlab, effectiveDSlab, hasRhoL, hasSpanL, hasPAllow,
     singlePlateMass, udl_kPa, udl_ton, udlLimit_kPa, udlLimit_ton, isUdlPass,
     gammaULS, B_code_min, t_req, isRigid, isCurling, isPlateUndersized, Beff, shearTopW_mm,
-    contactPressure_mean_MPa, contactPressure_max_MPa,
-    concreteDryBearing_MPa, mode1Limit_MPa,
+    contactPressure_static_mean_MPa, contactPressure_mean_MPa, contactPressure_max_MPa,
+    concreteDryBearing_MPa, mode1Limit_MPa, isMode1MaxPass,
+    qkStaticLimit_kN, qkPeakLimit_kN, qkStaticVal_kN, qkPeakVal_kN,
+    isQkStaticPass, isQkPeakPass, isMode2QkPass,
     punch, shearLoad_ULS_N, bottomSpread_mm, isSpreadOK,
-    M_UDL_benchmark, M_imposed_max, M_raw_max, b_e_governing, bendingOrientation,
-    isMode1Pass, isMode2Pass, isMode3Pass, allPass
+    M_UDL_benchmark, V_UDL_benchmark, M_imposed_max, V_imposed_max,
+    M_raw_max, b_e_governing, bendingOrientation, beam, beamAlt, beMode,
+    isMode1Pass, isMode2Pass, isMode3MomentPass, isMode3ShearPass, isMode3Pass, allPass
   };
 }
 
@@ -409,16 +569,16 @@ export function runPhysicsCalculations(inputs) {
   const {
     mPnm, mBase, addLoadPerFollower = 0,
     poweredModelKey, followerModelKey,
-    followerUnitWeight, nFollowerWheels, dFollower, wFollower, matKey, shoreA,
-    platL = 3.80, platW = 2.40, skateBiasPct,
+    followerUnitWeight, nFollowerWheels, dFollower, wFollower, matKey, shoreA, nuPU = null,
+    platL = 3.80, platW = 2.20, skateBiasPct,
     plateEnabled, B_plate, L_plate, t_plate, plateMatKey,
     pAllowFloor, hSlab, dSlab, concreteGradeKey, rhoL, designCode,
-    spanL, udlLimit_kPa = CONFIRMED_UDL_KPA,
+    spanL, udlLimit_kPa = CONFIRMED_UDL_KPA, beMode = '45deg',
     activeSetup
   } = inputs;
 
   const safePlatL = isPosNum(platL) ? Math.max(0.90, platL) : 3.80;
-  const safePlatW = isPosNum(platW) ? Math.max(0.60, platW) : 2.40;
+  const safePlatW = isPosNum(platW) ? Math.max(0.60, platW) : 2.20;
   const platArea = safePlatL * safePlatW;
   const plat = { length: safePlatL, width: safePlatW, area: platArea, label: `${safePlatL.toFixed(2)} × ${safePlatW.toFixed(2)} m (${platArea.toFixed(2)} m²)` };
 
@@ -451,7 +611,7 @@ export function runPhysicsCalculations(inputs) {
   const defaultBias =
     activeSetup === 1 ? 0.60 :
     activeSetup === 2 ? 0.35 :
-    activeSetup === 3 ? 0.25 :
+    activeSetup === 3 ? 0.20 :
     activeSetup === 4 ? 0.20 : 0.19;
 
   const effectiveBias = Math.max(minBias, skateBiasPct ? skateBiasPct / 100 : defaultBias);
@@ -467,6 +627,7 @@ export function runPhysicsCalculations(inputs) {
     pairWidth: poweredSpec.wheelsPerFork === 2 ? poweredSpec.width * 2 : poweredSpec.width,
     matKey: 'pu',
     shoreA: poweredSpec.shoreA,
+    nuPU,
     chassisW: poweredSpec.chassisW,
     chassisL: poweredSpec.chassisL
   });
@@ -483,6 +644,7 @@ export function runPhysicsCalculations(inputs) {
       pairWidth: followerSpec ? followerSpec.pairWidth : wFollower,
       matKey,
       shoreA,
+      nuPU,
       chassisW: followerSpec ? followerSpec.chassisW : 520,
       chassisL: followerSpec ? followerSpec.chassisL : 600
     });
@@ -494,7 +656,9 @@ export function runPhysicsCalculations(inputs) {
     governing = folEval;
     governingIsPowered = false;
   }
+  const maxWheelStatic_kN = folEval ? Math.max(powEval.staticWheel_kN, folEval.staticWheel_kN) : powEval.staticWheel_kN;
   const maxWheelLoad_kN = folEval ? Math.max(powEval.peakWheel_kN, folEval.peakWheel_kN) : powEval.peakWheel_kN;
+  const maxForkStatic_kN = folEval ? Math.max(powEval.staticFork_kN, folEval.staticFork_kN) : powEval.staticFork_kN;
   const maxForkLoad_kN = folEval ? Math.max(powEval.peakFork_kN, folEval.peakFork_kN) : powEval.peakFork_kN;
 
   const baseCoords = buildSkateCoords(
@@ -502,14 +666,60 @@ export function runPhysicsCalculations(inputs) {
     poweredSpec.chassisW, followerSpec ? followerSpec.chassisW : 520
   );
 
+  // Mode 3 Governing Span Line-up (transverse 2.20 m short edge centered on span L)
+  let mode3Spec = null;
+  if (isPosNum(spanL)) {
+    const midX = spanL / 2.0;
+    const halfSpanSide = plat.width / 2.0; // 1.10 m on 3.80 x 2.20 m
+    const powWidth_m = poweredSpec.chassisW / 1000.0; // 0.60 m for TS-10T
+    const outerBe_m = followerSpec && followerSpec.beFallback_m ? followerSpec.beFallback_m : 1.00;
+    const rawLoads = [];
+
+    if (activeSetup === 1) {
+      rawLoads.push({
+        id: 'P1', label: 'TS-10T', x_m: midX, P_kN: nominalSkateLoad_kN,
+        b_skate_m: powWidth_m, isPrimaryMid: true
+      });
+    } else if (activeSetup === 2) {
+      rawLoads.push({
+        id: 'F1', label: 'Follower', x_m: midX - halfSpanSide, P_kN: nominalSkateLoad_kN,
+        b_skate_m: outerBe_m, fixedBe_m: outerBe_m
+      });
+      rawLoads.push({
+        id: 'F2', label: 'Follower', x_m: midX + halfSpanSide, P_kN: nominalSkateLoad_kN,
+        b_skate_m: outerBe_m, fixedBe_m: outerBe_m, isPrimaryMid: true
+      });
+    } else {
+      rawLoads.push({
+        id: 'C1', label: followerSpec ? followerSpec.series : 'SRS-6',
+        x_m: midX - halfSpanSide, P_kN: nominalSkateLoad_kN,
+        b_skate_m: outerBe_m, fixedBe_m: outerBe_m
+      });
+      rawLoads.push({
+        id: 'P1', label: poweredModelKey || 'TS-10T',
+        x_m: midX, P_kN: nominalSkateLoad_kN,
+        b_skate_m: powWidth_m, isPrimaryMid: true
+      });
+      rawLoads.push({
+        id: 'C2', label: followerSpec ? followerSpec.series : 'SRS-6',
+        x_m: midX + halfSpanSide, P_kN: nominalSkateLoad_kN,
+        b_skate_m: outerBe_m, fixedBe_m: outerBe_m
+      });
+    }
+    mode3Spec = { rawLoads };
+  }
+
   const slab = evaluateSlabChecks({
     plat, grossMass, grossWeight_kN, phiDynamic,
     peakSupportLoad_kN: peakSkateLoad_kN,
+    maxForkStatic_kN,
     maxForkLoad_kN,
+    maxWheelStatic_kN,
+    maxWheelLoad_kN,
     governing,
     plateEnabled, B_plate, L_plate, t_plate, plateMat,
     pAllowFloor, hSlab, dSlab, concrete, rhoL, designCode, spanL, udlLimit_kPa,
-    baseCoords
+    baseCoords, beMode, mode3Spec
   });
 
   return {
@@ -522,7 +732,7 @@ export function runPhysicsCalculations(inputs) {
     effectiveBias, phiDynamic,
     nominalSkateLoad_kN, peakSkateLoad_kN,
     powEval, folEval, governing, governingIsPowered,
-    maxWheelLoad_kN, maxForkLoad_kN,
+    maxWheelStatic_kN, maxWheelLoad_kN, maxForkStatic_kN, maxForkLoad_kN,
     ...slab
   };
 }
@@ -537,6 +747,7 @@ export function runMobileBaseCalculations(inputs) {
     wCaster = 50,
     matKey = 'pu',
     shoreA = 95,
+    nuPU = null,
     platL = 3.80,
     platW = 2.40,
     casterBiasPct,
@@ -571,7 +782,8 @@ export function runMobileBaseCalculations(inputs) {
   const peakWheelLoad_kN = peakCasterLoad_kN / wheelsPerCaster;
 
   // Mode 1 Hertz contact on single wheel; Mode 2 punching shear on combined fork patch
-  const hertz = hertzLineContact(peakWheelLoad_kN * 1000, dCaster, wCaster, matKey, shoreA);
+  const hertzStatic = hertzLineContact(staticWheelLoad_kN * 1000, dCaster, wCaster, matKey, shoreA, nuPU);
+  const hertz = hertzLineContact(peakWheelLoad_kN * 1000, dCaster, wCaster, matKey, shoreA, nuPU);
   const forkSpanW_mm = wheelsPerCaster === 2 ? (2 * wCaster + 20) : wCaster;
   const patchW_mm = Math.max(50, forkSpanW_mm);
   const patchL_mm = Math.max(50, hertz.contactWidth_mm);
@@ -583,6 +795,7 @@ export function runMobileBaseCalculations(inputs) {
     peakSkate_kN: peakCasterLoad_kN,
     peakFork_kN: peakCasterLoad_kN,
     peakWheel_kN: peakWheelLoad_kN,
+    hertzStatic,
     hertz,
     patchW_mm,
     patchL_mm,
@@ -595,7 +808,10 @@ export function runMobileBaseCalculations(inputs) {
   const slab = evaluateSlabChecks({
     plat, grossMass, grossWeight_kN, phiDynamic,
     peakSupportLoad_kN: peakCasterLoad_kN,
+    maxForkStatic_kN: nominalCasterLoad_kN,
     maxForkLoad_kN: peakCasterLoad_kN,
+    maxWheelStatic_kN: staticWheelLoad_kN,
+    maxWheelLoad_kN: peakWheelLoad_kN,
     governing,
     plateEnabled, B_plate, L_plate, t_plate, plateMat,
     pAllowFloor, hSlab, dSlab, concrete, rhoL, designCode, spanL, udlLimit_kPa,
