@@ -27,16 +27,20 @@ export function renderLoadTree(container, res) {
   const powPeak = res.powEval.peakSkate_kN;
   const powWheelStatic = res.powEval.staticWheel_kN;
   const powWheelPeak = res.powEval.peakWheel_kN;
+  const powPmeanStat = res.powEval.hertzStatic.p_mean;
+  const powPmeanPeak = res.powEval.hertz.p_mean;
 
   let html = `
     <div class="tree-branch-col">
-      <span style="font-size:10px; color:var(--accent); font-weight:700;">2× ${res.poweredSpec.name}</span>
+      <span style="font-size:10px; color:var(--accent); font-weight:700;">2× ${res.poweredSpec.name} (Lw=${res.poweredSpec.width} mm)</span>
       <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
         Skate: ${powNom.toFixed(2)} static | ${powPeak.toFixed(2)} kN peak
       </div>
       <div class="tree-leaf-grid">
         <div class="tree-leaf">STATIC WHEEL<strong>${powWheelStatic.toFixed(2)} kN</strong></div>
         <div class="tree-leaf">PEAK WHEEL<strong>${powWheelPeak.toFixed(2)} kN</strong></div>
+        <div class="tree-leaf">HERTZ P_mean (STAT)<strong>${powPmeanStat.toFixed(2)} MPa</strong></div>
+        <div class="tree-leaf">HERTZ P_mean (PEAK)<strong>${powPmeanPeak.toFixed(2)} MPa</strong></div>
       </div>
     </div>
   `;
@@ -47,16 +51,22 @@ export function renderLoadTree(container, res) {
     const folPeak = res.folEval.peakSkate_kN;
     const folWheelStatic = res.folEval.staticWheel_kN;
     const folWheelPeak = res.folEval.peakWheel_kN;
+    const folForkStatic = res.folEval.staticFork_kN;
+    const folForkPeak = res.folEval.peakFork_kN;
+    const folPmeanStat = res.folEval.hertzStatic.p_mean;
+    const folPmeanPeak = res.folEval.hertz.p_mean;
 
     html += `
       <div class="tree-branch-col">
-        <span style="font-size:10px; color:var(--pass); font-weight:700;">${res.numFollowers}× ${folName}</span>
+        <span style="font-size:10px; color:var(--pass); font-weight:700;">${res.numFollowers}× ${folName} (Lw=${res.folEval.width} mm)</span>
         <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin:2px 0;">
           Skate: ${folNom.toFixed(2)} static | ${folPeak.toFixed(2)} kN peak
         </div>
         <div class="tree-leaf-grid">
-          <div class="tree-leaf">STATIC WHEEL<strong>${folWheelStatic.toFixed(2)} kN</strong></div>
-          <div class="tree-leaf">PEAK WHEEL<strong>${folWheelPeak.toFixed(2)} kN</strong></div>
+          <div class="tree-leaf">WHEEL (STAT / PEAK)<strong>${folWheelStatic.toFixed(2)} / ${folWheelPeak.toFixed(2)} kN</strong></div>
+          <div class="tree-leaf">FORK CONE (STAT / PEAK)<strong>${folForkStatic.toFixed(2)} / ${folForkPeak.toFixed(2)} kN</strong></div>
+          <div class="tree-leaf">HERTZ P_mean (STAT)<strong>${folPmeanStat.toFixed(2)} MPa</strong></div>
+          <div class="tree-leaf">HERTZ P_mean (PEAK)<strong>${folPmeanPeak.toFixed(2)} MPa</strong></div>
         </div>
       </div>
     `;
@@ -435,6 +445,10 @@ export function drawTopPlan(canvas, activeSetup, platLength, platWidth, nomLoad,
     `■ Blue: ${poweredName.split('(')[0].trim()}`,
     '■ Green: Followers'
   ];
+  if (activeSetup === 3) {
+    const cSpacing = (platWidth / 2).toFixed(2);
+    legendItems.push(`End c/c: ${cSpacing} m (${platWidth.toFixed(2)} m width)`);
+  }
   if (plateOn) legendItems.push('■ Purple: Spreader Plates');
 
   renderPlanCanvas(canvas, {
@@ -525,4 +539,200 @@ export function drawCasterTopPlan(canvas, numCasters, wheelsPerCaster, platLengt
       return casters;
     }
   });
+}
+
+// Multi-Point Simply Supported Beam SFD V(x) & BMD M(x) Renderer
+export function drawSfdBmdChart(canvas, beamRes, spanL, mRef, vRef, isDark = true) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const logicalW = 940;
+  const logicalH = 340;
+
+  if (canvas.width !== Math.round(logicalW * dpr) || canvas.height !== Math.round(logicalH * dpr)) {
+    canvas.width = Math.round(logicalW * dpr);
+    canvas.height = Math.round(logicalH * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, logicalW, logicalH);
+
+  const primaryText = isDark ? '#f8fafc' : '#0f172a';
+  const secondaryText = isDark ? '#94a3b8' : '#475569';
+  const gridStroke = isDark ? '#1e293b' : '#e2e8f0';
+  const axisStroke = isDark ? '#475569' : '#94a3b8';
+  const refColor = isDark ? '#f59e0b' : '#d97706';
+
+  if (!beamRes || !spanL || beamRes.activeLoads.length === 0) {
+    ctx.fillStyle = secondaryText;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Enter Span L to plot Multi-Point SFD V(x) & BMD M(x)', logicalW / 2, logicalH / 2);
+    return;
+  }
+
+  const plotX0 = 90;
+  const plotW = logicalW - 150;
+  const toX = (x) => plotX0 + (x / spanL) * plotW;
+
+  // TOP: SFD V(x) [y: 36..146, mid=91]
+  const sfdMidY = 91;
+  const sfdHalfH = 48;
+  const maxVScale = Math.max(beamRes.V_max_kNm || 1, vRef || 1, 1) * 1.18;
+  const toVy = (v) => sfdMidY - (v / maxVScale) * sfdHalfH;
+
+  ctx.fillStyle = primaryText;
+  ctx.font = 'bold 11.5px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`SHEAR FORCE V(x) [kN/m] — V_max = ${beamRes.V_max_kNm.toFixed(2)} vs Ref ±${(vRef || 0).toFixed(2)} kN/m`, plotX0, 20);
+
+  // Zero axis + grid
+  ctx.strokeStyle = axisStroke;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(plotX0, sfdMidY);
+  ctx.lineTo(plotX0 + plotW, sfdMidY);
+  ctx.stroke();
+
+  if (vRef) {
+    ctx.save();
+    ctx.strokeStyle = refColor;
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.3;
+    [vRef, -vRef].forEach((vr) => {
+      const ry = toVy(vr);
+      ctx.beginPath();
+      ctx.moveTo(plotX0, ry);
+      ctx.lineTo(plotX0 + plotW, ry);
+      ctx.stroke();
+    });
+    ctx.fillStyle = refColor;
+    ctx.font = 'bold 9.5px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`+V_ref (${vRef.toFixed(2)})`, plotX0 - 8, toVy(vRef) + 3);
+    ctx.fillText(`-V_ref`, plotX0 - 8, toVy(-vRef) + 3);
+    ctx.restore();
+  }
+
+  // SFD polygon fill & stroke
+  ctx.save();
+  ctx.beginPath();
+  beamRes.sfdPoints.forEach(([x, v], idx) => {
+    const px = toX(x);
+    const py = toVy(v);
+    if (idx === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.22)' : 'rgba(2, 132, 199, 0.16)';
+  ctx.fill();
+  ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.restore();
+
+  // SFD end values & step labels
+  ctx.fillStyle = isDark ? '#38bdf8' : '#0369a1';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`+${beamRes.RA_kNm.toFixed(2)}`, plotX0 + 4, toVy(beamRes.RA_kNm) - 5);
+  ctx.textAlign = 'right';
+  ctx.fillText(`-${beamRes.RB_kNm.toFixed(2)}`, plotX0 + plotW - 4, toVy(-beamRes.RB_kNm) + 12);
+
+  if (beamRes.knotMoments.length >= 3) {
+    const k0 = beamRes.knotMoments[0];
+    const kLast = beamRes.knotMoments[beamRes.knotMoments.length - 1];
+    ctx.textAlign = 'center';
+    ctx.fillText(`+${k0.V_after.toFixed(2)}`, toX((k0.x_m + beamRes.x_Mmax_m) / 2), toVy(k0.V_after) - 5);
+    ctx.fillText(`${kLast.V_before.toFixed(2)}`, toX((kLast.x_m + beamRes.x_Mmax_m) / 2), toVy(kLast.V_before) + 12);
+  }
+
+  // BOTTOM: BMD M(x) [y: 192..308, base=308]
+  const bmdBaseY = 308;
+  const bmdH = 104;
+  const maxMScale = Math.max(beamRes.M_max_kNm || 1, mRef || 1, 1) * 1.18;
+  const toMy = (m) => bmdBaseY - (m / maxMScale) * bmdH;
+
+  ctx.fillStyle = primaryText;
+  ctx.font = 'bold 11.5px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`BENDING MOMENT M(x) [kNm/m] — M_max = ${beamRes.M_max_kNm.toFixed(2)} vs Ref ${(mRef || 0).toFixed(2)} kNm/m`, plotX0, 178);
+
+  // Base zero line
+  ctx.strokeStyle = axisStroke;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(plotX0, bmdBaseY);
+  ctx.lineTo(plotX0 + plotW, bmdBaseY);
+  ctx.stroke();
+
+  if (mRef) {
+    const mry = toMy(mRef);
+    ctx.save();
+    ctx.strokeStyle = refColor;
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(plotX0, mry);
+    ctx.lineTo(plotX0 + plotW, mry);
+    ctx.stroke();
+    ctx.fillStyle = refColor;
+    ctx.font = 'bold 9.5px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(`M_ref (${mRef.toFixed(2)})`, plotX0 - 8, mry + 3);
+    ctx.restore();
+  }
+
+  // BMD fill & curve
+  ctx.save();
+  ctx.beginPath();
+  beamRes.bmdPoints.forEach(([x, m], idx) => {
+    const px = toX(x);
+    const py = toMy(m);
+    if (idx === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  const isMOver = mRef && beamRes.M_max_kNm > mRef;
+  ctx.fillStyle = isMOver
+    ? (isDark ? 'rgba(239, 68, 68, 0.22)' : 'rgba(220, 38, 38, 0.14)')
+    : (isDark ? 'rgba(34, 197, 94, 0.22)' : 'rgba(22, 163, 74, 0.15)');
+  ctx.fill();
+  ctx.strokeStyle = isMOver ? (isDark ? '#f87171' : '#dc2626') : (isDark ? '#4ade80' : '#16a34a');
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+  ctx.restore();
+
+  // Knot points & vertical load guides
+  ctx.save();
+  ctx.font = 'bold 9.5px sans-serif';
+  ctx.textAlign = 'center';
+  beamRes.knotMoments.forEach((km) => {
+    const kx = toX(km.x_m);
+    const ky = toMy(km.M_kNm);
+
+    ctx.strokeStyle = gridStroke;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    ctx.moveTo(kx, 34);
+    ctx.lineTo(kx, bmdBaseY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.arc(kx, ky, 4, 0, Math.PI * 2);
+    ctx.fillStyle = isMOver ? '#ef4444' : '#22c55e';
+    ctx.fill();
+
+    ctx.fillStyle = primaryText;
+    ctx.fillText(`${km.M_kNm.toFixed(2)}`, kx, ky - 8);
+    ctx.fillStyle = secondaryText;
+    ctx.fillText(`x=${km.x_m.toFixed(2)}m (${km.pEff_kNm.toFixed(1)} kN/m)`, kx, bmdBaseY + 14);
+  });
+  ctx.fillStyle = secondaryText;
+  ctx.textAlign = 'left';
+  ctx.fillText('0.00 m', plotX0 - 4, bmdBaseY + 14);
+  ctx.textAlign = 'right';
+  ctx.fillText(`${spanL.toFixed(2)} m`, plotX0 + plotW + 4, bmdBaseY + 14);
+  ctx.restore();
 }

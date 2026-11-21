@@ -1,10 +1,10 @@
-import { CASTER_PRESETS } from './data.js?v=10';
-import { runMobileBaseCalculations } from './physics.js?v=10';
-import { renderCasterLoadTree, drawFrontElevation, drawCasterTopPlan } from './renderer.js?v=10';
+import { CASTER_PRESETS } from './data.js?v=11';
+import { runMobileBaseCalculations } from './physics.js?v=11';
+import { renderCasterLoadTree, drawFrontElevation, drawCasterTopPlan } from './renderer.js?v=11';
 import {
   optNum, initTheme, bindPresetGroup, setCardStatus,
   readSharedSlabInputs, updateSharedSlabOutputs
-} from './ui_common.js?v=10';
+} from './ui_common.js?v=11';
 
 let numCasters = 6;
 let wheelsPerCaster = 2; // 1=Single, 2=Twin-Wheel

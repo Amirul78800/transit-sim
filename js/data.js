@@ -1,7 +1,7 @@
 // Physical Constants & Platform Geometry
 export const PLATFORM_PRESETS = {
-  '3.80x2.40': { length: 3.80, width: 2.40, label: '3.80 × 2.40 m' },
   '3.80x2.20': { length: 3.80, width: 2.20, label: '3.80 × 2.20 m' },
+  '3.80x2.40': { length: 3.80, width: 2.40, label: '3.80 × 2.40 m' },
   '4.40x2.20': { length: 4.40, width: 2.20, label: '4.40 × 2.20 m' }
 };
 
@@ -13,9 +13,23 @@ export const MOBILE_BASE_PRESETS = {
 export const G = 9.81;
 export const CONFIRMED_UDL_KPA = 7.50;
 
+export const S2_DEFAULTS = {
+  hSlab: 150,
+  dSlab: 120,
+  concreteGradeKey: 'C25/30',
+  fcu: 30,
+  rhoL: 0.0033,
+  udlLimit_kPa: 7.50,
+  pAllowFloor: 12.0,
+  qkStatic_kN: 4.5,
+  qkPeak_kN: 7.0,
+  shortSpanL: 2.80,
+  longSpanL: 11.70
+};
+
 // Roller / Wheel Materials
 export const MAT_DATA = {
-  pu:    { name: 'Polyurethane (PU / Vulkollan)', color: '#f59e0b', nu: 0.49 },
+  pu:    { name: 'Polyurethane (PU / Vulkollan)', color: '#f59e0b', nu: 0.50 },
   nylon: { name: 'Nylon PA6',                     color: '#e2e8f0', E: 2800,   nu: 0.40 },
   steel: { name: 'Cast Steel / Iron',             color: '#94a3b8', E: 210000, nu: 0.30 }
 };
@@ -73,7 +87,7 @@ export const POWERED_MODELS = {
 export const CATALOG_MODELS = {
   'GST-8':  { series: 'GST', name: 'GST-8 (6w, 28 kg)',       wheels: 6, dia: 80,  width: 70, pairWidth: 70,  unitTare: 28, wheelsPerFork: 1, forks: 6, chassisL: 360, chassisW: 200 },
   'GST-12': { series: 'GST', name: 'GST-12 (8w, 38 kg)',      wheels: 8, dia: 80,  width: 70, pairWidth: 70,  unitTare: 38, wheelsPerFork: 1, forks: 8, chassisL: 420, chassisW: 220 },
-  'SRS-6':  { series: 'SRS', name: 'SRS-6 (8w coax, 81 kg)',  wheels: 8, dia: 115, width: 30, pairWidth: 60,  unitTare: 81, wheelsPerFork: 2, forks: 4, chassisL: 600, chassisW: 600 },
+  'SRS-6':  { series: 'SRS', name: 'SRS-6 (8w coax, 81 kg)',  wheels: 8, dia: 115, width: 30, pairWidth: 60,  unitTare: 81, wheelsPerFork: 2, forks: 4, chassisL: 600, chassisW: 600, beFallback_m: 1.00 },
   'SRS-10': { series: 'SRS', name: 'SRS-10 (4w, 95 kg)',      wheels: 4, dia: 115, width: 75, pairWidth: 75,  unitTare: 95, wheelsPerFork: 1, forks: 4, chassisL: 600, chassisW: 600 },
   'CRQ-8':  { series: 'CRQ', name: 'CRQ-8 (8w coax, 85 kg)',  wheels: 8, dia: 115, width: 60, pairWidth: 120, unitTare: 85, wheelsPerFork: 2, forks: 4, chassisL: 810, chassisW: 520 }
 };
