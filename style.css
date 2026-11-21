@@ -581,7 +581,7 @@ canvas {
 }
 .formula-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 12px;
 }
@@ -687,6 +687,30 @@ canvas {
   font-size: 10px;
   color: var(--text-secondary);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.eq-res {
+  font-weight: 800;
+  color: var(--accent);
+}
+.eq-res.pass {
+  color: var(--pass);
+}
+.eq-res.fail {
+  color: var(--fail);
+}
+.eq-card-ref {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  white-space: nowrap;
 }
 @media (max-width: 980px) {
   .formula-grid { grid-template-columns: 1fr; }

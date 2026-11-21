@@ -1,6 +1,6 @@
 import { CATALOG_MODELS } from './data.js?v=11';
 import { runPhysicsCalculations } from './physics.js?v=11';
-import { renderLoadTree, drawFrontElevation, drawTopPlan, drawSfdBmdChart } from './renderer.js?v=11';
+import { renderLoadTree, drawFrontElevation, drawTopPlan, drawSfdBmdChart, renderAmrFormulaSteps } from './renderer.js?v=11';
 import {
   optNum, initTheme, bindPresetGroup, setCardStatus,
   readSharedSlabInputs, updateSharedSlabOutputs
@@ -127,7 +127,8 @@ const dom = {
   lblTopPlanSub: document.getElementById('lblTopPlanSub'),
   sfdBmdCanvas: document.getElementById('sfdBmdCanvas'),
   frontCanvas: document.getElementById('frontCanvas'),
-  topCanvas: document.getElementById('topCanvas')
+  topCanvas: document.getElementById('topCanvas'),
+  formulaStepsWrap: document.getElementById('formulaStepsWrap')
 };
 
 function syncFollowerCatalogInputs(modelKey) {
@@ -402,6 +403,7 @@ function update() {
   dom.lblTopPlanSub.innerText = `${res.totalSkates} Skates · Base ${inputs.mBase > 0 ? `${inputs.mBase} kg` : 'Removed (0 kg)'}`;
 
   renderLoadTree(dom.treeBranchWrap, res);
+  renderAmrFormulaSteps(dom.formulaStepsWrap, inputs, res);
   renderCanvases(inputs, res, isDark);
 }
 

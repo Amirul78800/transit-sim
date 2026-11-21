@@ -736,3 +736,225 @@ export function drawSfdBmdChart(canvas, beamRes, spanL, mRef, vRef, isDark = tru
   ctx.fillText(`${spanL.toFixed(2)} m`, plotX0 + plotW + 4, bmdBaseY + 14);
   ctx.restore();
 }
+
+const ffrac = (num, den) => `<span class="frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+const fradic = (inner) => `<span class="radic">&radic;<span class="rad-over">${inner}</span></span>`;
+const passCls = (flag) => (flag === true ? 'pass' : flag === false ? 'fail' : '');
+
+// Live Textbook Calculation Steps Renderer (Formula -> Substitution -> Result -> Card Check)
+export function renderAmrFormulaSteps(container, inputs, res) {
+  if (!container) return;
+
+  const pName = res.poweredSpec.name.split('(')[0].trim();
+  const fName = res.followerSpec ? res.followerSpec.name.split('(')[0].trim() : 'Follower';
+  const mPow = res.poweredSpec.unitTare;
+  const biasPct = (res.effectiveBias * 100).toFixed(0);
+  const biasDec = res.effectiveBias.toFixed(2);
+
+  // Block 1 values
+  const grossExpr = res.numFollowers > 0
+    ? `${inputs.mPnm} + ${inputs.mBase} + 2(${mPow}) + ${res.numFollowers}(${res.unitFollowerMass.toFixed(0)} + ${res.addLoadPerFollower.toFixed(0)})`
+    : `${inputs.mPnm} + ${inputs.mBase} + 2(${mPow})`;
+
+  const powStat = res.powEval.staticWheel_kN;
+  const powPeak = res.powEval.peakWheel_kN;
+  const powW = res.poweredSpec.wheels;
+  const powWfork = res.poweredSpec.wheelsPerFork;
+
+  let eq14Fol = '';
+  if (res.folEval) {
+    const fStat = res.folEval.staticWheel_kN;
+    const fPeak = res.folEval.peakWheel_kN;
+    const fForkPk = res.folEval.peakFork_kN;
+    const nw = res.folEval.nWheels;
+    const wf = res.folEval.wheelsPerFork;
+    eq14Fol = `
+      <div class="eq-row">
+        <span class="math"><b>${fName}:</b> <i>F</i><sub>wh,stat</sub> = ${ffrac(`${res.nominalSkateLoad_kN.toFixed(2)}`, `${nw}`)} = <b>${fStat.toFixed(2)} kN</b>, &nbsp; <i>F</i><sub>fork,pk</sub> = 0.35(${res.peakSkateLoad_kN.toFixed(2)}) = <b>${fForkPk.toFixed(2)} kN</b>, &nbsp; <i>F</i><sub>wh,pk</sub> = ${ffrac(`${fForkPk.toFixed(2)}`, `${wf}`)} = <span class="eq-res">${fPeak.toFixed(2)} kN</span></span>
+        <span class="eq-num"><span class="eq-card-ref">Card 3</span>(1.4b)</span>
+      </div>`;
+  }
+
+  // Block 2 values (Gent + Hertz with governing unit + secondary unit)
+  const govUnit = res.governing;
+  const govLabel = res.governingIsPowered ? pName : fName;
+  const secUnit = res.folEval ? (res.governingIsPowered ? res.folEval : res.powEval) : null;
+  const secLabel = res.governingIsPowered ? fName : pName;
+
+  const isPU = inputs.matKey === 'pu' || res.governingIsPowered;
+  const activeSA = res.governingIsPowered ? res.poweredSpec.shoreA : inputs.shoreA;
+  const gentNum = 56 + 7.62336 * activeSA;
+  const gentDen = 254 - 2.54 * activeSA;
+  const hzPeak = govUnit.hertz;
+  const hzStat = govUnit.hertzStatic;
+  const govR = govUnit.dia / 2.0;
+  const govLw = govUnit.width;
+  const govFpkN = Math.round(govUnit.peakWheel_kN * 1000);
+  const govFstN = Math.round(govUnit.staticWheel_kN * 1000);
+
+  const gentRow = isPU ? `
+    <div class="eq-row">
+      <span class="math"><i>E</i><sub>PU</sub> = ${ffrac(`0.0981(56 + 7.62336&middot;<i>S</i><sub>A</sub>)`, `0.137505(254 &minus; 2.54&middot;<i>S</i><sub>A</sub>)`)} = ${ffrac(`0.0981 &times; ${gentNum.toFixed(2)}`, `0.137505 &times; ${gentDen.toFixed(2)}`)} = <span class="eq-res">${hzPeak.E_w.toFixed(2)} MPa</span> <small class="eq-note">(at S<sub>A</sub>=${activeSA})</small></span>
+      <span class="eq-num">(2.1)</span>
+    </div>
+    <div class="eq-row">
+      <span class="math">${ffrac(`1`, `<i>E</i>*`)} = ${ffrac(`1 &minus; &nu;<sup>2</sup>`, `<i>E</i>`)} &rArr; <i>E</i>* = ${ffrac(`${hzPeak.E_w.toFixed(2)}`, `1 &minus; ${hzPeak.nu_w.toFixed(2)}<sup>2</sup>`)} = ${ffrac(`${hzPeak.E_w.toFixed(2)}`, `${(1 - hzPeak.nu_w * hzPeak.nu_w).toFixed(4)}`)} = <span class="eq-res">${hzPeak.E_star.toFixed(2)} MPa</span></span>
+      <span class="eq-num">(2.2)</span>
+    </div>` : `
+    <div class="eq-row">
+      <span class="math">${ffrac(`1`, `<i>E</i>*`)} = ${ffrac(`1 &minus; &nu;<sub>w</sub><sup>2</sup>`, `<i>E</i><sub>w</sub>`)} + ${ffrac(`1 &minus; 0.20<sup>2</sup>`, `30000`)} &rArr; <i>E</i>* = <span class="eq-res">${hzPeak.E_star.toFixed(1)} MPa</span></span>
+      <span class="eq-num">(2.1)</span>
+    </div>`;
+
+  let hertzContactRow;
+  if (inputs.plateEnabled && res.isRigid) {
+    hertzContactRow = `
+      <div class="eq-row">
+        <span class="math"><i>p</i><sub>plate</sub> = ${ffrac(`<i>F</i><sub>skate,pk</sub>`, `<i>B</i><sub>eff</sub> &middot; <i>L</i><sub>c</sub>`)} = ${ffrac(`${(res.peakSkateLoad_kN * 1000).toFixed(0)} N`, `${res.Beff.toFixed(0)} &times; ${Math.min(inputs.L_plate, Math.max(govUnit.chassisL, res.B_code_min || 0)).toFixed(0)} mm²`)} = <span class="eq-res ${passCls(res.isMode1Pass)}">${res.contactPressure_mean_MPa.toFixed(2)} MPa</span> <small class="eq-note">(Limit: ${res.mode1Limit_MPa ? res.mode1Limit_MPa.toFixed(1) : '—'} MPa)</small></span>
+        <span class="eq-num"><span class="eq-card-ref">Card 4</span>(2.3)</span>
+      </div>`;
+  } else {
+    const secNote = secUnit
+      ? `<br><small class="eq-note">Secondary (${secLabel}, Lw=${secUnit.width} mm): A<sub>Hertz</sub>=${secUnit.hertzStatic.area_mm2.toFixed(0)}→${secUnit.hertz.area_mm2.toFixed(0)} mm² &rArr; P<sub>mean</sub> = <b>${secUnit.hertzStatic.p_mean.toFixed(2)}</b> (Stat) / <b>${secUnit.hertz.p_mean.toFixed(2)} MPa</b> (Peak)</small>`
+      : '';
+    hertzContactRow = `
+      <div class="eq-row">
+        <span class="math"><b>Governing (${govLabel}, R=${govR} mm, L<sub>w</sub>=${govLw} mm):</b><br>
+        <i>b</i><sub>pk</sub> = ${fradic(ffrac(`4 &middot; ${govFpkN} &middot; ${govR}`, `&pi; &middot; ${govLw} &middot; ${hzPeak.E_star.toFixed(2)}`))} = <b>${hzPeak.b_mm.toFixed(2)} mm</b>, &nbsp; <i>A</i><sub>Hertz</sub> = 2<i>bL</i><sub>w</sub> = <b>${hzPeak.area_mm2.toFixed(1)} mm²</b> <small class="eq-note">(Stat A: ${hzStat.area_mm2.toFixed(1)} mm²)</small><br>
+        <i>P</i><sub>mean,stat</sub> = ${ffrac(`${govFstN}`, `${hzStat.area_mm2.toFixed(1)}`)} = <b>${hzStat.p_mean.toFixed(2)} MPa</b>, &nbsp; <i>P</i><sub>mean,pk</sub> = ${ffrac(`${govFpkN}`, `${hzPeak.area_mm2.toFixed(1)}`)} = <span class="eq-res ${passCls(res.isMode1Pass)}">${hzPeak.p_mean.toFixed(2)} MPa</span> &le; ${res.mode1Limit_MPa ? `${res.mode1Limit_MPa.toFixed(1)} MPa` : 'Pending'} <small class="eq-note">(P<sub>max</sub>=${hzPeak.p_max.toFixed(2)})</small>${secNote}</span>
+        <span class="eq-num"><span class="eq-card-ref">Card 4</span>(2.3)</span>
+      </div>`;
+  }
+
+  // Block 3 values (Mode 2 Qk + Punching Shear)
+  const p = res.punch;
+  const dEff = res.effectiveDSlab ? res.effectiveDSlab.toFixed(0) : '—';
+  const vEdkN = (res.shearLoad_ULS_N / 1000).toFixed(2);
+  const punchFormula = p.code === 'EC2'
+    ? `<i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 4&pi;<i>d</i> = ${p.u0_mm.toFixed(0)} + 4&pi;(${dEff}) = <b>${p.u1_mm ? p.u1_mm.toFixed(1) : '—'} mm</b>`
+    : `<i>u</i><sub>1</sub> = <i>u</i><sub>0</sub> + 12<i>d</i> = ${p.u0_mm.toFixed(0)} + 12(${dEff}) = <b>${p.u1_mm ? p.u1_mm.toFixed(0) : '—'} mm</b>`;
+  const punchStress = p.v_Ed_1 != null
+    ? `<i>v</i><sub>Ed,1</sub> = ${ffrac(`${res.shearLoad_ULS_N.toFixed(0)} N`, `${p.u1_mm.toFixed(0)} &times; ${dEff}`)} = <span class="eq-res">${p.v_Ed_1.toFixed(3)} MPa</span>` +
+      (p.v_Rd_c != null ? ` &le; <i>v</i><sub>c</sub> = <b>${p.v_Rd_c.toFixed(3)} MPa</b>` : ' <small class="eq-note">(enter &rho;<sub>l</sub> for v<sub>c</sub>)</small>')
+    : `Pending slab <i>h</i>`;
+
+  // Block 4 values (Mode 3 Multi-Point SFD/BMD + Plate)
+  let mode3Rows;
+  if (res.hasSpanL && res.beam) {
+    const b = res.beam;
+    const L = inputs.spanL;
+    const loadList = b.activeLoads
+      .map((ld) => `${ld.id} @ ${ld.x_m.toFixed(2)} m: ${ffrac(`${ld.P_kN.toFixed(2)}`, `${ld.be_m.toFixed(2)}`)} = <b>${ld.pEff_kNm.toFixed(2)} kN/m</b>`)
+      .join(' &nbsp;|&nbsp; ');
+    const sumPeffExpr = b.activeLoads.map((ld) => ld.pEff_kNm.toFixed(2)).join(' + ');
+
+    const leftKnots = b.knotMoments.filter((k) => k.x_m < b.x_Mmax_m - 1e-5);
+    let momentSub = `${b.RA_kNm.toFixed(2)}(${b.x_Mmax_m.toFixed(2)})`;
+    let momentParts = `${(b.RA_kNm * b.x_Mmax_m).toFixed(2)}`;
+    if (leftKnots.length > 0) {
+      leftKnots.forEach((lk) => {
+        const dx = b.x_Mmax_m - lk.x_m;
+        momentSub += ` &minus; ${lk.pEff_kNm.toFixed(2)}(${b.x_Mmax_m.toFixed(2)} &minus; ${lk.x_m.toFixed(2)})`;
+        momentParts += ` &minus; ${(lk.pEff_kNm * dx).toFixed(2)}`;
+      });
+    }
+
+    mode3Rows = `
+      <div class="eq-row">
+        <span class="math"><i>M</i><sub>ref</sub> = ${ffrac(`${inputs.udlLimit_kPa.toFixed(1)} &times; ${L.toFixed(2)}<sup>2</sup>`, `8`)} = <b>${res.M_UDL_benchmark.toFixed(2)} kNm/m</b>, &nbsp; <i>V</i><sub>ref</sub> = ${ffrac(`${inputs.udlLimit_kPa.toFixed(1)} &times; ${L.toFixed(2)}`, `2`)} = <b>${res.V_UDL_benchmark.toFixed(2)} kN/m</b></span>
+        <span class="eq-num">(4.1)</span>
+      </div>
+      <div class="eq-row">
+        <span class="math"><b>Strip Loads (${res.bendingOrientation}):</b> ${loadList}</span>
+        <span class="eq-num">(4.2)</span>
+      </div>
+      <div class="eq-row">
+        <span class="math"><i>R</i><sub>A</sub> = <i>V</i><sub>max</sub> = ${ffrac(sumPeffExpr, `2`)} = <span class="eq-res ${passCls(res.isMode3ShearPass)}">${b.V_max_kNm.toFixed(2)} kN/m</span> <small class="eq-note">(V<sub>mid</sub> = &plusmn;${b.V_mid_kNm.toFixed(2)} kN/m)</small><br>
+        <i>M</i><sub>max</sub>(<i>x</i>=${b.x_Mmax_m.toFixed(2)} m) = ${momentSub} = ${momentParts} = <span class="eq-res ${passCls(res.isMode3MomentPass)}">${b.M_max_kNm.toFixed(2)} kNm/m</span></span>
+        <span class="eq-num"><span class="eq-card-ref">Card 6</span>(4.3)</span>
+      </div>`;
+  } else {
+    mode3Rows = `
+      <div class="eq-row">
+        <span class="math"><i>M</i><sub>ref</sub> = ${ffrac(`<i>w</i> <i>L</i><sup>2</sup>`, `8`)}, &nbsp; <i>V</i><sub>ref</sub> = ${ffrac(`<i>w</i> <i>L</i>`, `2`)} &nbsp; &mdash; <small class="eq-note">Enter S2 Span L to compute live SFD &amp; BMD</small></span>
+        <span class="eq-num"><span class="eq-card-ref">Card 6</span>(4.1)</span>
+      </div>`;
+  }
+
+  const plateRow = inputs.plateEnabled
+    ? `<div class="eq-row">
+         <span class="math"><i>c</i> = ${ffrac(`<i>B</i><sub>cap</sub> &minus; ${govUnit.chassisW}`, `2`)}, &nbsp; <i>t</i><sub>req</sub> = <b>${res.t_req.toFixed(1)} mm</b> vs. <i>t</i> = ${inputs.t_plate} mm &rArr; <span class="eq-res ${res.isRigid ? 'pass' : 'fail'}">${res.isPlateUndersized ? 'UNDERSIZED' : res.isRigid ? 'RIGID' : 'CURLING'}</span> <small class="eq-note">(Cone spread: ${res.bottomSpread_mm ? res.bottomSpread_mm.toFixed(0) : '—'} mm)</small></span>
+         <span class="eq-num"><span class="eq-card-ref">Card 8</span>(4.4)</span>
+       </div>`
+    : `<div class="eq-row">
+         <span class="math">Spreader Plates: <span class="eq-res">OFF</span> <small class="eq-note">(bare wheels directly on floor; enable Sec. 4 to evaluate t<sub>req</sub>)</small></span>
+         <span class="eq-num"><span class="eq-card-ref">Card 8</span>(4.4)</span>
+       </div>`;
+
+  container.innerHTML = `
+    <article class="formula-block">
+      <div class="formula-head">
+        <strong>1. Load Accumulation, Footprint UDL &amp; 3-Point Rocking</strong>
+        <span class="std-ref">EN 1991-1-1 §6.3 · EN 1991-3 · TR34 / ASTM E1155</span>
+      </div>
+      <div class="eq-card">
+        <div class="eq-row">
+          <span class="math"><i>M</i><sub>gross</sub> = ${grossExpr} = <span class="eq-res">${res.grossMass.toLocaleString()} kg</span> &rArr; <i>W</i><sub>gross</sub> = ${ffrac(`${res.grossMass} &times; 9.81`, `1000`)} = <span class="eq-res">${res.grossWeight_kN.toFixed(2)} kN</span></span>
+          <span class="eq-num">(1.1)</span>
+        </div>
+        <div class="eq-row">
+          <span class="math">UDL = ${ffrac(`<i>W</i><sub>gross</sub>`, `<i>L</i> &middot; <i>W</i>`)} = ${ffrac(`${res.grossWeight_kN.toFixed(2)}`, `${res.plat.length.toFixed(2)} &times; ${res.plat.width.toFixed(2)}`)} = ${ffrac(`${res.grossWeight_kN.toFixed(2)}`, `${res.plat.area.toFixed(2)}`)} = <span class="eq-res ${passCls(res.isUdlPass)}">${res.udl_kPa.toFixed(2)} kN/m²</span> &le; ${res.udlLimit_kPa.toFixed(2)} kN/m²</span>
+          <span class="eq-num"><span class="eq-card-ref">Card 7</span>(1.2)</span>
+        </div>
+        <div class="eq-row">
+          <span class="math"><i>F</i><sub>skate,stat</sub> = ${ffrac(`${res.grossWeight_kN.toFixed(2)}`, `${res.totalSkates}`)} = <b>${res.nominalSkateLoad_kN.toFixed(2)} kN</b>, &nbsp; <i>F</i><sub>skate,pk</sub> = ${res.grossWeight_kN.toFixed(2)} &times; ${biasDec} <small class="eq-note">(${biasPct}%)</small> &times; 1.20 = <span class="eq-res">${res.peakSkateLoad_kN.toFixed(2)} kN</span></span>
+          <span class="eq-num"><span class="eq-card-ref">Card 1</span>(1.3)</span>
+        </div>
+        <div class="eq-row">
+          <span class="math"><b>${pName}:</b> <i>F</i><sub>wh,stat</sub> = ${ffrac(`${res.nominalSkateLoad_kN.toFixed(2)}`, `${powW}`)} = <b>${powStat.toFixed(2)} kN</b>, &nbsp; <i>F</i><sub>wh,pk</sub> = ${ffrac(`0.35(${res.peakSkateLoad_kN.toFixed(2)})`, `${powWfork}`)} = <span class="eq-res">${powPeak.toFixed(2)} kN</span></span>
+          <span class="eq-num"><span class="eq-card-ref">Card 2</span>(1.4a)</span>
+        </div>
+        ${eq14Fol}
+      </div>
+    </article>
+
+    <article class="formula-block">
+      <div class="formula-head">
+        <strong>2. Mode 1 — Surface Bearing Pressure (Gent + Hertz)</strong>
+        <span class="std-ref">Gent (1958) / ASTM D2240 · BS 8110-1 Cl. 5.2.3.4 (fb = 0.4·fcu)</span>
+      </div>
+      <div class="eq-card">
+        ${gentRow}
+        ${hertzContactRow}
+      </div>
+    </article>
+
+    <article class="formula-block">
+      <div class="formula-head">
+        <strong>3. Mode 2 — Concentrated Point Load (Qk) &amp; Punching Shear</strong>
+        <span class="std-ref">EN 1991-1-1 / BS 6399 · BS 8110-1 Cl. 3.7.7 · EC2 Cl. 6.4</span>
+      </div>
+      <div class="eq-card">
+        <div class="eq-row">
+          <span class="math"><i>Q</i><sub>k,stat</sub> = <b>${res.qkStaticVal_kN.toFixed(2)} kN</b> &le; 4.5 kN (${res.isQkStaticPass ? 'PASS' : 'FAIL'}), &nbsp; <i>Q</i><sub>k,pk</sub> = <span class="eq-res ${passCls(res.isMode2Pass)}">${res.qkPeakVal_kN.toFixed(2)} kN</span> &le; 7.0 kN (${res.isQkPeakPass ? 'PASS' : 'FAIL'})</span>
+          <span class="eq-num"><span class="eq-card-ref">Card 5</span>(3.1)</span>
+        </div>
+        <div class="eq-row">
+          <span class="math"><b>${p.code}:</b> <i>V</i><sub>Ed</sub> = ${res.gammaULS.toFixed(2)}(${res.plateEnabled && res.isRigid ? res.peakSkateLoad_kN.toFixed(2) : res.maxForkLoad_kN.toFixed(2)}) = <b>${vEdkN} kN</b>, &nbsp; ${punchFormula}, &nbsp; ${punchStress}</span>
+          <span class="eq-num">(3.2)</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="formula-block">
+      <div class="formula-head">
+        <strong>4. Mode 3 — Strip Width b<sub>e</sub>, Multi-Point SFD/BMD &amp; Spreader Plate</strong>
+        <span class="std-ref">BS 5400 / EC2 45° · BS 8110-1 Cl. 3.5.2.2 · AISC Design Guide 1</span>
+      </div>
+      <div class="eq-card">
+        ${mode3Rows}
+        ${plateRow}
+      </div>
+    </article>
+  `;
+}
