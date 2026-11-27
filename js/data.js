@@ -15,21 +15,49 @@ export const CONFIRMED_UDL_KPA = 7.50;
 
 export const S2_DEFAULTS = {
   hSlab: 150,
-  dSlab: 120,
-  concreteGradeKey: 'C25/30',
+  cover_mm: 20,
+  barDia_mm: 7,
+  dShear_mm: 130,     // h - c
+  dFlex_mm: 126.5,    // h - c - barDia/2
+  zMax_mm: 120.1,     // 0.95 * dFlex rounded per rev.00.1 hand check
+  asProv_mm2_m: 385,  // BRC Mesh B7 (7 mm @ 100 mm c/c)
+  fy_MPa: 460,
   fcu: 30,
-  rhoL: 0.0033,
+  concreteGradeKey: 'C25/30',
+  rhoL: 0.385 / 130,  // 385 / (1000 * 130) = 0.002962
+  dlSlab_kPa: 3.60,   // 0.15 m * 24 kN/m^3
+  meHanging_kPa: 1.00,// optional ceiling & M&E hanging load
   udlLimit_kPa: 7.50,
-  pAllowFloor: 12.0,
+  pnmOverallL: 7.30,
+  pnmOverallW: 2.20,
+  pnmOverallArea: 16.06,
+  pAllowFloor: 12.0,  // BS 8110-1 strict 0.4 * fcu
+  pAllowUls_MPa: 18.0,// BS 8110-1 factored 0.6 * fcu
   qkStatic_kN: 4.5,
   qkPeak_kN: 7.0,
   shortSpanL: 2.80,
+  typBayL: 3.40,
   longSpanL: 11.70
+};
+
+export const PE_BENCHMARK = {
+  grossLoad8_kN: 80.0,
+  grossLoad6_kN: 83.0,
+  // Frame support reactions on 83 kN (J2-ANA-1-1): [P1_front, C1_fp, C2_fp, C3_rp, C4_rp, P2_rear]
+  reactions6_kN: { frontPwr: 12.97, frontPsv: 17.43, rearPsv: 13.66, rearPwr: 7.85 },
+  govCornerPeak_kN: 7.4,        // 17.43 * 0.35 * 1.2 = 7.32 -> 7.4 kN
+  patch_mm: [60, 20],
+  mode1Uls_MPa: 9.9,            // 1.6 * 7400 / 1200 = 9.87 -> 9.9 MPa
+  mode2Fult_kN: 11.9,           // 1.6 * 7.4 = 11.84 -> 11.9 kN
+  mode2Face_MPa: 0.6,           // 11840 / (160 * 130) = 0.57 -> 0.6 MPa
+  mode2Perim_MPa: 0.04,         // PE reported 0.04 (exact 11840 / (1720*130) = 0.053)
+  mode3FeaMdes_kNm: 15.3,       // PE FEA with +1.0 kPa M&E
+  mode3FeaAsReq_mm2: 319
 };
 
 // Roller / Wheel Materials
 export const MAT_DATA = {
-  pu:    { name: 'Polyurethane (PU / Vulkollan)', color: '#f59e0b', nu: 0.50 },
+  pu:    { name: 'Polyurethane (PU / Vulkollan)', color: '#f59e0b', nu: 0.49 },
   nylon: { name: 'Nylon PA6',                     color: '#e2e8f0', E: 2800,   nu: 0.40 },
   steel: { name: 'Cast Steel / Iron',             color: '#94a3b8', E: 210000, nu: 0.30 }
 };
@@ -89,7 +117,7 @@ export const CATALOG_MODELS = {
   'GST-12': { series: 'GST', name: 'GST-12 (8w, 38 kg)',      wheels: 8, dia: 80,  width: 70, pairWidth: 70,  unitTare: 38, wheelsPerFork: 1, forks: 8, chassisL: 420, chassisW: 220 },
   'SRS-6':  { series: 'SRS', name: 'SRS-6 (8w coax, 81 kg)',  wheels: 8, dia: 115, width: 30, pairWidth: 60,  unitTare: 81, wheelsPerFork: 2, forks: 4, chassisL: 600, chassisW: 600, beFallback_m: 1.00 },
   'SRS-10': { series: 'SRS', name: 'SRS-10 (4w, 95 kg)',      wheels: 4, dia: 115, width: 75, pairWidth: 75,  unitTare: 95, wheelsPerFork: 1, forks: 4, chassisL: 600, chassisW: 600 },
-  'CRQ-8':  { series: 'CRQ', name: 'CRQ-8 (8w coax, 85 kg)',  wheels: 8, dia: 115, width: 60, pairWidth: 120, unitTare: 85, wheelsPerFork: 2, forks: 4, chassisL: 810, chassisW: 520 }
+  'CRQ-8':  { series: 'CRQ', name: 'CRQ-8 (12T coax, 85 kg)', wheels: 8, dia: 115, width: 60, pairWidth: 120, unitTare: 85, wheelsPerFork: 2, forks: 4, chassisL: 810, chassisW: 520, height_mm: 165, wheelSpacing_mm: 400, beFallback_m: 0.52 }
 };
 
 // Heavy-Duty Mobile Base Caster Presets
