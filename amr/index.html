@@ -43,7 +43,7 @@
   }
   </script>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text y='.9em' font-size='70' x='15'>⚙️</text></svg>">
-  <link rel="stylesheet" href="/style.css?v=11">
+  <link rel="stylesheet" href="/style.css?v=12">
 </head>
 <body>
 
@@ -71,14 +71,22 @@
     <div class="panel">
       <div class="panel-title">
         <span>1. Equipment Presets</span>
-        <span style="font-size:10px; color:var(--accent);" id="lblSetupSummary">Preset B: 6-Skate</span>
+        <span style="font-size:10px; color:var(--accent);" id="lblSetupSummary">Preset 2: 6-Skate</span>
       </div>
       <div class="setup-toggle" role="tablist" aria-label="Rigging Configuration">
-        <button class="setup-btn" id="btnSetup1" role="tab" aria-selected="false" title="Preset A: 2× TS-10T (rev.02)">2-Skate</button>
+        <button class="setup-btn" id="btnSetup1" role="tab" aria-selected="false" title="Preset 1: 2× TS-10T">2-Skate</button>
         <button class="setup-btn" id="btnSetup2" role="tab" aria-selected="false">4-Pt</button>
-        <button class="setup-btn active" id="btnSetup3" role="tab" aria-selected="true" title="Preset B: 2× TS-10T + 4× SRS-6 (rev.00)">6-Skate</button>
+        <button class="setup-btn active" id="btnSetup3" role="tab" aria-selected="true" title="Preset 2: 2× TS-10T + 4× CRQ-8 (rev.00.1)">6-Skate</button>
         <button class="setup-btn" id="btnSetup4" role="tab" aria-selected="false">8-Pt</button>
         <button class="setup-btn" id="btnSetup5" role="tab" aria-selected="false">10-Pt</button>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <span class="label-wrap">Engineering Model Basis</span>
+        <div class="btn-group" id="btnGroupCalcModel" role="group" aria-label="Calculation Basis">
+          <button class="btn-preset active" data-model="report">Report rev.00.1</button>
+          <button class="btn-preset" data-model="pe">PE J2-ANA-1-1</button>
+        </div>
       </div>
 
       <div class="form-group" style="margin-top:10px;">
@@ -131,11 +139,11 @@
             <option value="GST-12">GST-12 (8w, 38 kg)</option>
           </optgroup>
           <optgroup label="SRS Series">
-            <option value="SRS-6" selected>SRS-6 (8w coax, 81 kg, R=57.5, Lw=30)</option>
+            <option value="SRS-6">SRS-6 (8w coax, 81 kg, R=57.5, Lw=30)</option>
             <option value="SRS-10">SRS-10 (4w, 95 kg)</option>
           </optgroup>
           <optgroup label="CRQ Series">
-            <option value="CRQ-8">CRQ-8 (8w coax, 85 kg)</option>
+            <option value="CRQ-8" selected>CRQ-8 12T (8w coax, 85 kg, Ø115×60)</option>
           </optgroup>
           <optgroup label="Manual">
             <option value="CUSTOM">Custom Follower</option>
@@ -144,8 +152,8 @@
       </div>
 
       <div class="form-group">
-        <div class="label-wrap"><label for="inputFollowerWeight">Follower Weight (per unit)</label><span class="val" id="lblFollowerWeight">81 kg</span></div>
-        <input type="range" id="inputFollowerWeight" min="10" max="200" step="1" value="81">
+        <div class="label-wrap"><label for="inputFollowerWeight">Follower Weight (per unit)</label><span class="val" id="lblFollowerWeight">85 kg</span></div>
+        <input type="range" id="inputFollowerWeight" min="10" max="200" step="1" value="85">
       </div>
       <div class="form-group">
         <div class="label-wrap"><label for="inputFollowerWheels">Wheels / Skate</label><span class="val" id="lblFollowerWheels">8</span></div>
@@ -156,8 +164,8 @@
         <input type="range" id="inputFollowerDia" min="60" max="150" step="5" value="115">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><label for="inputFollowerWidth">Tread Width (Lw)</label><span class="val" id="lblFollowerWidth">30 mm</span></div>
-        <input type="range" id="inputFollowerWidth" min="25" max="110" step="5" value="30">
+        <div class="label-wrap"><label for="inputFollowerWidth">Tread Width (Lw)</label><span class="val" id="lblFollowerWidth">60 mm</span></div>
+        <input type="range" id="inputFollowerWidth" min="25" max="110" step="5" value="60">
       </div>
       <div class="form-group">
         <label class="label-wrap" for="selectFollowerMat">Wheel Material</label>
@@ -168,11 +176,11 @@
         </select>
       </div>
       <div class="form-group" id="shoreAGroup">
-        <div class="label-wrap"><label for="inputShoreA">PU Shore A / Poisson ν</label><span class="val" id="lblShoreA">95 A · ν=0.50</span></div>
+        <div class="label-wrap"><label for="inputShoreA">PU Shore A / Poisson ν</label><span class="val" id="lblShoreA">95 A · ν=0.49</span></div>
         <input type="range" id="inputShoreA" min="80" max="98" step="1" value="95">
         <div class="btn-group" id="btnGroupNu" role="group" aria-label="PU Poisson Ratio">
-          <button class="btn-preset active" data-nu="0.50">ν = 0.50 (58.44)</button>
-          <button class="btn-preset" data-nu="0.49">ν = 0.49 (57.68)</button>
+          <button class="btn-preset active" data-nu="0.49">ν = 0.49 (57.68)</button>
+          <button class="btn-preset" data-nu="0.50">ν = 0.50 (58.44)</button>
         </div>
       </div>
     </div>
@@ -195,8 +203,8 @@
         <input type="range" id="inputBaseMass" min="0" max="3000" step="100" value="1500">
       </div>
       <div class="form-group">
-        <div class="label-wrap"><label for="inputAddLoad">RHS Riser + PU Pad (per follower)</label><span class="val" id="lblAddLoad">12 kg/ea</span></div>
-        <input type="range" id="inputAddLoad" min="0" max="100" step="1" value="12">
+        <div class="label-wrap"><label for="inputAddLoad">RHS Riser + PU Pad (per follower)</label><span class="val" id="lblAddLoad">0 kg/ea</span></div>
+        <input type="range" id="inputAddLoad" min="0" max="100" step="1" value="0">
       </div>
 
       <div class="sub-box sub-box-highlight">
@@ -206,20 +214,20 @@
         </div>
         <div class="sub-box-row">
           <span>Follower Weight:</span>
-          <strong id="lblFollowerWeightSum">81 kg/ea · 486 kg</strong>
+          <strong id="lblFollowerWeightSum">85 kg/ea · 340 kg</strong>
         </div>
         <div class="sub-box-row">
           <span>Additional Load:</span>
-          <strong id="lblAddLoadSum">12 kg/ea · 72 kg</strong>
+          <strong id="lblAddLoadSum">0 kg/ea · 0 kg</strong>
         </div>
         <div class="sub-box-divider">
           <div class="sub-box-row">
             <span>Gross Total:</span>
-            <strong id="lblTotalGrossMass">8,498 kg</strong>
+            <strong id="lblTotalGrossMass">8,280 kg</strong>
           </div>
           <div class="sub-box-row">
             <span>Gravity Weight:</span>
-            <strong id="lblTotalGrossWeight" class="val-accent">83.37 kN</strong>
+            <strong id="lblTotalGrossWeight" class="val-accent">81.23 kN</strong>
           </div>
         </div>
       </div>
@@ -340,21 +348,42 @@
 
       <div class="form-group">
         <label class="label-wrap" for="inputSpanL">S2 Slab Span L (m)</label>
-        <input type="number" id="inputSpanL" min="1.0" max="15.0" step="0.05" value="2.80" placeholder="2.80 m / 11.70 m">
+        <input type="number" id="inputSpanL" min="1.0" max="15.0" step="0.05" value="2.80" placeholder="2.80 m / 3.40 m">
         <div class="btn-group" id="btnGroupSpan">
           <button class="btn-preset active" data-span="2.80">2.80 m</button>
-          <button class="btn-preset" data-span="6.0">6.0 m</button>
+          <button class="btn-preset" data-span="3.40">3.40 m</button>
           <button class="btn-preset" data-span="11.70">11.70 m</button>
           <button class="btn-preset" data-span="">Clear</button>
         </div>
       </div>
 
       <div class="form-group">
+        <span class="label-wrap">Mode 3 Span Alignment</span>
+        <div class="btn-group" id="btnGroupSpanAlign">
+          <button class="btn-preset active" data-align="transverse3">3-Skate Env (0.3/1.4/2.5)</button>
+          <button class="btn-preset" data-align="longitudinal">Longitudinal (3.8 m)</button>
+        </div>
+      </div>
+
+      <div class="form-group">
         <span class="label-wrap">Mode 3 Effective Width (b_e)</span>
         <div class="btn-group" id="btnGroupBeMode">
-          <button class="btn-preset active" data-be="45deg">45° Spread (b+2h)</button>
-          <button class="btn-preset" data-be="bs8110">BS 8110 Cl. 3.5.2.2</button>
+          <button class="btn-preset active" data-be="bs8110">BS 8110 Cl. 3.5.2.2</button>
+          <button class="btn-preset" data-be="45deg">45° Spread (b+2h)</button>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:11px; color:var(--text-primary);">
+          <input type="checkbox" id="checkMeLoad" style="accent-color:var(--accent); cursor:pointer;">
+          <span>+1.0 kPa Ceiling &amp; M&amp;E Hanging DL (3.60 &rarr; 4.60)</span>
+        </label>
+      </div>
+
+      <div class="sub-box">
+        <div class="sub-box-row"><span>As-Built Rebar:</span><strong>BRC Mesh B7 (Ø7 @ 100)</strong></div>
+        <div class="sub-box-row"><span>Effective Depths:</span><strong>d_v = 130 | d = 126.5 mm</strong></div>
+        <div class="sub-box-row"><span>Provided Capacity:</span><strong>385 mm²/m · M_ult 18.50 kNm/m</strong></div>
       </div>
 
       <div class="form-group">
@@ -398,28 +427,28 @@
       </div>
 
       <div class="dash-card" id="cardPressure">
-        <div class="meta"><span>4. MODE 1: BEARING</span><span>Gent + Hertz P_mean</span></div>
+        <div class="meta"><span>4. MODE 1: BEARING</span><span>Hertz &amp; Patch (0.4 / 0.6 fcu)</span></div>
         <div class="main-val" id="valPressure">—</div>
         <div class="sub" id="subPressure">—</div>
         <div class="status-badge status-info" id="badgePressure">PENDING</div>
       </div>
 
       <div class="dash-card" id="cardPunch">
-        <div class="meta"><span>5. MODE 2: POINT LOAD</span><span id="tagPunchCode">Qk 4.5 / 7.0 kN</span></div>
+        <div class="meta"><span>5. MODE 2: PUNCHING</span><span id="tagPunchCode">BS 8110 Cl.3.7.7</span></div>
         <div class="main-val" id="valPunch">—</div>
         <div class="sub" id="subPunch">—</div>
         <div class="status-badge status-info" id="badgePunch">PENDING</div>
       </div>
 
       <div class="dash-card" id="cardBending">
-        <div class="meta"><span>6. MODE 3: BENDING</span><span>Per 1.0 m Strip</span></div>
+        <div class="meta"><span>6. MODE 3: BENDING</span><span>ULS + BRC Mesh B7</span></div>
         <div class="main-val" id="valBending">—</div>
         <div class="sub" id="subBending">—</div>
         <div class="status-badge status-info" id="badgeBending">PENDING</div>
       </div>
 
       <div class="dash-card" id="cardUdl">
-        <div class="meta"><span>7. FLOOR UDL</span><span id="tagUdlArea">8.36 m²</span></div>
+        <div class="meta"><span>7. FLOOR UDL</span><span id="tagUdlArea">16.06 m² Overall</span></div>
         <div class="main-val" id="valUdl">—</div>
         <div class="sub" id="subUdl">Rating: 7.50 kN/m²</div>
         <div class="status-badge status-info" id="badgeUdl">—</div>
@@ -437,6 +466,13 @@
         <div class="main-val" id="valVerdict">—</div>
         <div class="sub" id="subVerdict">—</div>
         <div class="status-badge status-info" id="badgeVerdict">—</div>
+      </div>
+
+      <div class="dash-card" id="cardDeflection" style="grid-column: 1 / -1;">
+        <div class="meta"><span>10. SERVICEABILITY DEFLECTION (BS 8110-1 Pt. 2)</span><span>L/500 (LL) &amp; L/250 (DL + LL)</span></div>
+        <div class="main-val" id="valDeflection">—</div>
+        <div class="sub" id="subDeflection">—</div>
+        <div class="status-badge status-info" id="badgeDeflection">PENDING</div>
       </div>
     </div>
 
@@ -488,7 +524,7 @@
 
     <!-- FORMULAS & STANDARDS DRAWER -->
     <details class="assumptions-box">
-      <summary>Calculation Formulas &amp; Live Step-by-Step Verification (Level 2 S2 Slab Rev.02)</summary>
+      <summary>Calculation Formulas &amp; Live Step-by-Step Verification (Level 2 S2 Slab rev.00.1 / PE J2-ANA-1-1)</summary>
       <div class="formula-grid" id="formulaStepsWrap"></div>
     </details>
 
@@ -507,6 +543,6 @@
   </div>
 </footer>
 
-<script type="module" src="/js/main.js?v=11"></script>
+<script type="module" src="/js/main.js?v=12"></script>
 </body>
 </html>

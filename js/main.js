@@ -1,15 +1,17 @@
-import { CATALOG_MODELS } from './data.js?v=11';
-import { runPhysicsCalculations } from './physics.js?v=11';
-import { renderLoadTree, drawFrontElevation, drawTopPlan, drawSfdBmdChart, renderAmrFormulaSteps } from './renderer.js?v=11';
+import { CATALOG_MODELS } from './data.js?v=12';
+import { runPhysicsCalculations } from './physics.js?v=12';
+import { renderLoadTree, drawFrontElevation, drawTopPlan, drawSfdBmdChart, renderAmrFormulaSteps } from './renderer.js?v=12';
 import {
   optNum, initTheme, bindPresetGroup, setCardStatus,
   readSharedSlabInputs, updateSharedSlabOutputs
-} from './ui_common.js?v=11';
+} from './ui_common.js?v=12';
 
-let activeSetup = 3; // 1=Preset A (2-Skate), 2=4-Point, 3=Preset B (6-Skate), 4=8-Point, 5=10-Point
+let activeSetup = 3; // 1=Preset 1 (2-Skate), 2=4-Point, 3=Preset 2 (6-Skate), 4=8-Point, 5=10-Point
 let designCode = 'BS8110';
-let beMode = '45deg';
-let nuPU = 0.50;
+let beMode = 'bs8110';
+let nuPU = 0.49;
+let calcModel = 'report';
+let spanAlign = 'transverse3';
 let lastNonZeroBase = 1500;
 let getTheme = () => 'dark';
 let cachedInputs = null;
@@ -44,6 +46,7 @@ const dom = {
   inputRhoL: document.getElementById('inputRhoL'),
   inputSpanL: document.getElementById('inputSpanL'),
   inputFloorStress: document.getElementById('inputFloorStress'),
+  checkMeLoad: document.getElementById('checkMeLoad'),
 
   lblHeaderSub: document.getElementById('lblHeaderSub'),
   lblSetupSummary: document.getElementById('lblSetupSummary'),
@@ -119,6 +122,11 @@ const dom = {
   subVerdict: document.getElementById('subVerdict'),
   badgeVerdict: document.getElementById('badgeVerdict'),
 
+  cardDeflection: document.getElementById('cardDeflection'),
+  valDeflection: document.getElementById('valDeflection'),
+  subDeflection: document.getElementById('subDeflection'),
+  badgeDeflection: document.getElementById('badgeDeflection'),
+
   lblTreeModeTag: document.getElementById('lblTreeModeTag'),
   treeBranchWrap: document.getElementById('treeBranchWrap'),
   lblSfdBmdSub: document.getElementById('lblSfdBmdSub'),
@@ -168,8 +176,9 @@ function bindEvents() {
     dom.inputPnmMass, dom.inputBaseMass, dom.inputAddLoad,
     dom.checkPlateEnable, dom.inputPlateWidth, dom.inputPlateLength, dom.inputPlateThick,
     dom.selectPlateSteel, dom.inputUdlLimit, dom.selectConcreteGrade,
-    dom.inputSlabDepth, dom.inputRhoL, dom.inputSpanL, dom.inputFloorStress
-  ];
+    dom.inputSlabDepth, dom.inputRhoL, dom.inputSpanL, dom.inputFloorStress,
+    dom.checkMeLoad
+  ].filter(Boolean);
   liveInputs.forEach((el) => el.addEventListener('input', () => {
     if (el === dom.inputFollowerWheels || el === dom.inputFollowerDia || el === dom.inputFollowerWidth) {
       dom.selectFollowerModel.value = 'CUSTOM';
@@ -217,6 +226,14 @@ function bindEvents() {
     beMode = btn.getAttribute('data-be');
     update();
   });
+  bindPresetGroup('#btnGroupCalcModel', (btn) => {
+    calcModel = btn.getAttribute('data-model');
+    update();
+  });
+  bindPresetGroup('#btnGroupSpanAlign', (btn) => {
+    spanAlign = btn.getAttribute('data-align');
+    update();
+  });
   bindPresetGroup('#btnGroupPlates', (btn) => {
     dom.inputPlateWidth.value = btn.getAttribute('data-w');
     dom.inputPlateLength.value = btn.getAttribute('data-l');
@@ -249,9 +266,9 @@ function setMode(mode) {
   });
 
   const modeMeta = {
-    1: { summary: 'Preset A: 2× TS-10T', tree: 'PRESET A · 2-SKATE (TS-10T)', bias: 60, followerActive: false },
+    1: { summary: 'Preset 1: 2× TS-10T', tree: 'PRESET 1 · 2-SKATE (TS-10T)', bias: 60, followerActive: false },
     2: { summary: '4-Point', tree: '4-POINT', bias: 35, followerActive: true },
-    3: { summary: 'Preset B: 6-Skate', tree: 'PRESET B · 6-SKATE (2×TS + 4×SRS)', bias: 20, followerActive: true },
+    3: { summary: 'Preset 2: 6-Skate', tree: 'PRESET 2 · 6-SKATE (2×TS + 4×CRQ-8)', bias: 20, followerActive: true },
     4: { summary: '8-Point', tree: '8-POINT', bias: 20, followerActive: true },
     5: { summary: '10-Point', tree: '10-POINT', bias: 19, followerActive: true }
   }[mode];
@@ -279,7 +296,8 @@ function renderCanvases(inputs, res, isDark) {
       inputs.spanL,
       res.M_UDL_benchmark,
       res.V_UDL_benchmark,
-      isDark
+      isDark,
+      { mDes: res.M_des_kNm, mUlt: res.M_ult_kNm }
     );
   }
 
@@ -314,7 +332,12 @@ function renderCanvases(inputs, res, isDark) {
     inputs.B_plate,
     inputs.L_plate,
     res.poweredSpec.name,
-    isDark
+    isDark,
+    {
+      calcModel: res.calcModel,
+      peData: res.peData,
+      followerName: res.followerSpec ? res.followerSpec.name : 'Followers'
+    }
   );
 }
 
@@ -339,6 +362,9 @@ function update() {
     nuPU,
     skateBiasPct: parseFloat(dom.inputSkateBias.value),
     beMode,
+    calcModel,
+    spanAlign,
+    meLoadOn: !!(dom.checkMeLoad && dom.checkMeLoad.checked),
     ...shared,
     activeSetup
   };
@@ -369,15 +395,30 @@ function update() {
   dom.lblTotalGrossWeight.innerText = `${res.grossWeight_kN.toFixed(2)} kN`;
 
   // Cards 1–3
-  dom.valSkateLoad.innerText = `${res.peakSkateLoad_kN.toFixed(2)} kN`;
-  dom.subSkateLoad.innerText = `Static: ${res.nominalSkateLoad_kN.toFixed(2)} kN | Peak: ${res.peakSkateLoad_kN.toFixed(2)} kN`;
-  setCardStatus(dom.cardSkateLoad, dom.badgeSkateLoad, 'info', `${res.totalSkates} SKATES`);
+  if (res.calcModel === 'pe' && res.peData && Array.isArray(res.peData.reactions)) {
+    const r = res.peData.reactions;
+    const govSk = Math.max(...r);
+    dom.valSkateLoad.innerText = `${govSk.toFixed(2)} kN`;
+    dom.subSkateLoad.innerText = r.length >= 6
+      ? `PE Frame (${res.peData.totalLoad_kN.toFixed(1)} kN): F-Psv ${r[2].toFixed(2)} | R-Psv ${r[4].toFixed(2)} | Pwr ${r[0].toFixed(2)}/${r[1].toFixed(2)} kN`
+      : `PE Frame (${res.peData.totalLoad_kN.toFixed(1)} kN): ${r[0].toFixed(2)} kN/skate`;
+    setCardStatus(dom.cardSkateLoad, dom.badgeSkateLoad, 'info', 'PE J2-ANA-1-1');
+  } else {
+    dom.valSkateLoad.innerText = `${res.peakSkateLoad_kN.toFixed(2)} kN`;
+    dom.subSkateLoad.innerText = `Static: ${res.nominalSkateLoad_kN.toFixed(2)} kN | Peak: ${res.peakSkateLoad_kN.toFixed(2)} kN`;
+    setCardStatus(dom.cardSkateLoad, dom.badgeSkateLoad, 'info', `${res.totalSkates} SKATES`);
+  }
 
   dom.valPowWheel.innerText = `${res.powEval.peakWheel_kN.toFixed(2)} kN`;
   dom.subPowWheel.innerText = `Stat: ${res.powEval.staticWheel_kN.toFixed(2)} kN | P_mean: ${res.powEval.hertzStatic.p_mean.toFixed(2)}→${res.powEval.hertz.p_mean.toFixed(2)} MPa`;
   setCardStatus(dom.cardPowWheel, dom.badgePowWheel, 'info', res.poweredSpec.name.split('(')[0].trim());
 
-  if (res.folEval) {
+  if (res.calcModel === 'pe' && res.peData && res.folEval) {
+    dom.valFolWheel.innerText = `${res.peData.govWheelPeak_kN.toFixed(2)} kN`;
+    dom.subFolWheel.innerText = `PE Gov Wheel (17.43×0.35×1.20) | ForkStat/Pk: ${res.folEval.staticFork_kN.toFixed(2)}/${res.folEval.peakFork_kN.toFixed(2)} kN`;
+    const folTag = res.followerSpec ? res.followerSpec.name.split('(')[0].trim() : 'PE CRQ-8';
+    setCardStatus(dom.cardFolWheel, dom.badgeFolWheel, 'info', `${folTag} (PE ${res.peData.govWheelPeak_kN.toFixed(1)} kN)`);
+  } else if (res.folEval) {
     dom.valFolWheel.innerText = `${res.folEval.peakWheel_kN.toFixed(2)} / ${res.folEval.peakFork_kN.toFixed(2)} kN`;
     dom.subFolWheel.innerText = `Wheel Stat: ${res.folEval.staticWheel_kN.toFixed(2)} | Fork Stat: ${res.folEval.staticFork_kN.toFixed(2)} | P_mean: ${res.folEval.hertzStatic.p_mean.toFixed(2)}→${res.folEval.hertz.p_mean.toFixed(2)}`;
     const folTag = res.followerSpec ? res.followerSpec.name.split('(')[0].trim() : 'CUSTOM';
